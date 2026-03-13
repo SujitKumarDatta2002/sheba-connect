@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
+import UploadDocument from "./pages/UploadDocument";
 import Layout from "./components/Layout";
 
 import Home from "./pages/Home";
@@ -21,6 +22,7 @@ function App() {
           <Route path="/complaints" element={<Complaints />} />
           <Route path="/services" element={<Services />} />
           <Route path="/documents" element={<Documents />} />
+          <Route path="/upload/:type" element={<UploadDocument />} />
 
         </Routes>
 

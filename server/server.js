@@ -11,6 +11,8 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
+app.use("/uploads", express.static("uploads"));
+
 app.get("/", (req, res) => {
   res.send("ShebaConnect Backend Running");
 });
@@ -22,6 +24,10 @@ const complaintRoutes = require("./routes/complaintRoutes");
 
 app.use("/api/complaints", complaintRoutes);
 const PORT = process.env.PORT || 5000;
+
+const documentRoutes = require("./routes/documentRoutes");
+
+app.use("/api/documents", documentRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
