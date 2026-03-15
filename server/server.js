@@ -17,7 +17,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Serve uploaded documents
+app.use("/uploads", express.static("uploads"));
+
+// Test route
 app.get("/", (req, res) => {
   res.send("ShebaConnect Backend Running");
 });
@@ -26,9 +29,13 @@ app.get("/", (req, res) => {
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
-// Complaint routes (protected)
+// Complaint routes
 const complaintRoutes = require("./routes/complaintRoutes");
 app.use("/api/complaints", complaintRoutes);
+
+// Document routes
+const documentRoutes = require("./routes/documentRoutes");
+app.use("/api/documents", documentRoutes);
 
 const PORT = process.env.PORT || 5000;
 
