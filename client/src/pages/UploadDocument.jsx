@@ -1,78 +1,6 @@
-// import { useState } from "react";
-// import axios from "axios";
-// import { useParams } from "react-router-dom";
-
-// export default function UploadDocument() {
-
-//   const { type } = useParams();
-
-//   const [file, setFile] = useState(null);
-
-//   const handleUpload = async () => {
-
-//     if (!file) {
-//       alert("Please select a file");
-//       return;
-//     }
-
-//     const formData = new FormData();
-
-//     formData.append("file", file);
-
-//     try {
-
-//       const res = await axios.post(
-//         `http://localhost:5000/api/documents/upload/${type}`,
-//         formData
-//       );
-
-//       alert("Document uploaded successfully!");
-
-//       console.log(res.data);
-
-//     } catch (error) {
-
-//       console.error(error);
-
-//       alert("Upload failed");
-
-//     }
-
-//   };
-
-//   return (
-
-//     <div className="bg-white p-8 rounded shadow max-w-lg">
-
-//       <h2 className="text-2xl font-bold mb-6">
-//         Upload {type} Document
-//       </h2>
-
-//       <input
-//         type="file"
-//         accept="application/pdf"
-//         onChange={(e)=>setFile(e.target.files[0])}
-//       />
-
-//       <button
-//         onClick={handleUpload}
-//         className="bg-blue-600 text-white px-5 py-2 rounded mt-4"
-//       >
-//         Upload
-//       </button>
-
-//     </div>
-
-//   );
-// }
 
 
-
-
-
-
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaUpload, FaFilePdf, FaTimes } from "react-icons/fa";
@@ -83,9 +11,11 @@ export default function UploadDocument() {
   const navigate = useNavigate();
 
   const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
+
     const selected = e.target.files[0];
 
     if (!selected) return;
@@ -96,6 +26,10 @@ export default function UploadDocument() {
     }
 
     setFile(selected);
+
+    // Create preview URL
+    const url = URL.createObjectURL(selected);
+    setPreviewUrl(url);
   };
 
   const handleUpload = async () => {
@@ -106,7 +40,7 @@ export default function UploadDocument() {
     }
 
     const formData = new FormData();
-   formData.append("file", file);
+    formData.append("file", file);
     formData.append("documentType", type);
 
     try {
@@ -124,8 +58,10 @@ export default function UploadDocument() {
       navigate("/documents");
 
     } catch (err) {
+
       console.log(err);
       alert("Upload failed");
+
     }
 
     setLoading(false);
@@ -133,7 +69,17 @@ export default function UploadDocument() {
 
   const removeFile = () => {
     setFile(null);
+    setPreviewUrl(null);
   };
+
+  // Cleanup preview URL
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   return (
 
@@ -169,7 +115,7 @@ export default function UploadDocument() {
         </label>
 
 
-        {/* File Preview */}
+        {/* File Info */}
 
         {file && (
 
@@ -199,6 +145,27 @@ export default function UploadDocument() {
             >
               <FaTimes />
             </button>
+
+          </div>
+
+        )}
+
+
+        {/* PDF Preview */}
+
+        {previewUrl && (
+
+          <div className="mt-6 border rounded-lg overflow-hidden">
+
+            <div className="bg-gray-100 px-4 py-2 font-medium">
+              PDF Preview
+            </div>
+
+            <iframe
+              src={previewUrl}
+              className="w-full h-96"
+              title="PDF Preview"
+            />
 
           </div>
 

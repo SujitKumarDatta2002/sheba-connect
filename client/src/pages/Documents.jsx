@@ -1,8 +1,9 @@
+
+
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FaUpload, FaDownload, FaTrash, FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-
 
 export default function Documents() {
 
@@ -12,7 +13,6 @@ export default function Documents() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sort, setSort] = useState("newest");
-  const [previewDoc, setPreviewDoc] = useState(null);
 
   const documentTypes = [
     { type: "passport", name: "Passport", category: "Identity" },
@@ -50,8 +50,21 @@ export default function Documents() {
     }
   };
 
-  const completion =
-    (documents.length / documentTypes.length) * 100;
+  /* ----------------------------
+     FIXED PROFILE COMPLETION
+  -----------------------------*/
+
+  const uploadedCount = documentTypes.filter(docType =>
+    documents.some(doc => doc.documentType === docType.type)
+  ).length;
+
+  const completion = Math.round(
+    (uploadedCount / documentTypes.length) * 100
+  );
+
+  /* ----------------------------
+     SEARCH / FILTER / SORT
+  -----------------------------*/
 
   const filteredDocs = documentTypes
     .filter(doc =>
@@ -67,25 +80,26 @@ export default function Documents() {
     });
 
   const sortedDocs = [...filteredDocs].sort((a, b) => {
+
     const docA = getDocument(a.type);
     const docB = getDocument(b.type);
 
-    if (sort === "name") return a.name.localeCompare(b.name);
+    if (sort === "name")
+      return a.name.localeCompare(b.name);
 
-    if (sort === "newest") {
+    if (sort === "newest")
       return new Date(docB?.createdAt || 0) -
-        new Date(docA?.createdAt || 0);
-    }
+             new Date(docA?.createdAt || 0);
 
-    if (sort === "oldest") {
+    if (sort === "oldest")
       return new Date(docA?.createdAt || 0) -
-        new Date(docB?.createdAt || 0);
-    }
+             new Date(docB?.createdAt || 0);
 
     return 0;
   });
 
   return (
+
     <div className="p-10">
 
       {/* Header */}
@@ -98,7 +112,6 @@ export default function Documents() {
 
       </div>
 
-
       {/* Profile Completion */}
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
@@ -108,7 +121,7 @@ export default function Documents() {
         </h2>
 
         <p className="text-sm text-gray-500 mb-3">
-          {Math.round(completion)}% completed
+          {uploadedCount} of {documentTypes.length} documents uploaded ({completion}%)
         </p>
 
         <div className="w-full bg-gray-200 rounded h-3">
@@ -121,7 +134,6 @@ export default function Documents() {
         </div>
 
       </div>
-
 
       {/* Search + Filters */}
 
@@ -166,7 +178,6 @@ export default function Documents() {
         </select>
 
       </div>
-
 
       {/* Document Table */}
 
@@ -286,4 +297,3 @@ export default function Documents() {
     </div>
   );
 }
-
