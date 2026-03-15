@@ -12,14 +12,12 @@ import {
   FaClock,
   FaExclamationCircle,
   FaFileAlt,
-  FaUser,
-  FaBell,
-  FaChevronDown,
   FaHistory,
   FaSpinner,
   FaFilePdf,
   FaEdit
 } from "react-icons/fa";
+import jsPDF from "jspdf";
 
 export default function Complaints() {
 
@@ -39,11 +37,11 @@ export default function Complaints() {
     issueKeyword: "",
     description: "",
     priority: "medium",
-    citizenName: "",
-    citizenId: "",
-    contactNumber: "",
-    email: "",
-    address: ""
+    citizenName: currentUser?.name || "",
+    citizenId: currentUser?.nid || "",
+    contactNumber: currentUser?.phone || "",
+    email: currentUser?.email || "",
+    address: currentUser?.address || ""
   });
 
   const fetchComplaints = async () => {
@@ -315,6 +313,144 @@ export default function Complaints() {
             ) : (
 
               filteredComplaints.map(c => (
+  // Download template as PDF
+  const downloadTemplateAsPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add content to PDF
+    const lines = editedTemplate.split('\n');
+    let y = 10;
+    
+    doc.setFontSize(10);
+    lines.forEach(line => {
+      if (y > 280) {
+        doc.addPage();
+        y = 10;
+      }
+      doc.text(line, 10, y);
+      y += 5;
+    });
+    
+    doc.save(`complaint_${formData.department}_${Date.now()}.pdf`);
+  };
+
+  // Download template as text file
+  const downloadTemplateAsText = () => {
+    const element = document.createElement("a");
+    const file = new Blob([editedTemplate], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `complaint_${formData.department}_${Date.now()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  // Print template
+  const printTemplate = () => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Complaint Form</title>');
+    printWindow.document.write('<style>body { font-family: monospace; white-space: pre-wrap; padding: 20px; }</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write('<pre>' + editedTemplate + '</pre>');
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Export complaint as PDF
+  const exportComplaintAsPDF = (complaint) => {
+    const doc = new jsPDF();
+    
+    let y = 10;
+    
+    doc.setFontSize(16);
+    doc.text("COMPLAINT DETAILS", 10, y);
+    y += 10;
+    
+    doc.setFontSize(12);
+    doc.text(`Complaint #: ${complaint.complaintNumber || complaint._id}`, 10, y);
+    y += 7;
+    doc.text(`Citizen: ${complaint.citizenName}`, 10, y);
+    y += 7;
+    doc.text(`Contact: ${complaint.contactNumber}`, 10, y);
+    y += 7;
+    doc.text(`Department: ${complaint.department}`, 10, y);
+    y += 7;
+    doc.text(`Issue: ${complaint.issueKeyword}`, 10, y);
+    y += 7;
+    doc.text(`Status: ${complaint.status}`, 10, y);
+    y += 7;
+    doc.text(`Priority: ${complaint.priority}`, 10, y);
+    y += 7;
+    doc.text(`Date: ${complaint.createdAt ? new Date(complaint.createdAt).toLocaleString() : "N/A"}`, 10, y);
+    y += 10;
+    
+    doc.setFontSize(14);
+    doc.text("Description:", 10, y);
+    y += 7;
+    doc.setFontSize(11);
+    
+    const descriptionLines = doc.splitTextToSize(complaint.description || "No description", 180);
+    descriptionLines.forEach(line => {
+      if (y > 280) {
+        doc.addPage();
+        y = 10;
+      }
+      doc.text(line, 10, y);
+      y += 5;
+    });
+    
+    doc.save(`complaint_${complaint.complaintNumber || complaint._id}.pdf`);
+  };
+
+  // Check if complaint belongs to current user
+  const isMyComplaint = (complaint) => {
+    if (!currentUser) return false;
+    
+    const complaintUserId = complaint.userId?._id || complaint.userId;
+    const currentUserId = currentUser._id;
+    
+    // Check by ID
+    if (currentUserId && complaintUserId) {
+      return complaintUserId === currentUserId;
+    }
+    
+    // Check by email
+    if (currentUser.email && complaint.email && complaint.email !== "N/A") {
+      return complaint.email.toLowerCase() === currentUser.email.toLowerCase();
+    }
+    
+    // Check by phone
+    if (currentUser.phone && complaint.contactNumber && complaint.contactNumber !== "N/A") {
+      return complaint.contactNumber === currentUser.phone;
+    }
+    
+    // Check by name (case insensitive)
+    if (currentUser.name && complaint.citizenName && complaint.citizenName !== "Not Provided") {
+      return complaint.citizenName.toLowerCase().trim() === currentUser.name.toLowerCase().trim();
+    }
+    
+    return false;
+  };
+
+  // Filter complaints based on search and active tab
+  const filteredComplaints = complaints.filter(c => {
+    const matchesSearch = searchTerm === "" || 
+      c.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.issueKeyword?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.citizenName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.complaintNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesFilter = filterStatus === "all" || c.status === filterStatus;
+    
+    // Filter by "My Complaints" tab
+    let matchesTab = true;
+    if (activeTab === "my") {
+      matchesTab = isMyComplaint(c);
+    }
+    
+    return matchesSearch && matchesFilter && matchesTab;
+  });
 
                 <tr key={c._id} className="border-t">
 

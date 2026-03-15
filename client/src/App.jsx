@@ -31,6 +31,7 @@ function App() {
     <Router>
 
       {/* Navbar shown on all pages except login/register */}
+      {/* Navbar */}
       <Routes>
         <Route path="/login" element={null} />
         <Route path="/register" element={null} />
