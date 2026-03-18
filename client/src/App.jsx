@@ -12,6 +12,7 @@ import UploadDocument from "./pages/UploadDocument";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -82,6 +83,16 @@ function App() {
             </PrivateRoute>
           }
         />
+
+          {/* Admin Dashboard Route */}
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
 
       </Routes>
 

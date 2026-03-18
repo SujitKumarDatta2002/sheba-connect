@@ -73,6 +73,15 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Add this with your other routes
+const solutionRoutes = require("./routes/solutionRoutes");
+app.use("/api/solutions", solutionRoutes);
+
+// Add this with your other routes
+const adminRoutes = require("./routes/adminRoutes");
+app.use("/api/admin", adminRoutes);
+
+
 // Routes
 app.get("/", (req, res) => {
   res.send("ShebaConnect Backend Running");
