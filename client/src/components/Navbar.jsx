@@ -10,7 +10,8 @@ import {
   FaBars,
   FaTimes,
   FaBell,
-  FaChevronDown
+  FaChevronDown,
+  FaShieldAlt
 } from "react-icons/fa";
 
 export default function Navbar({ user, setUser }) {
@@ -58,6 +59,17 @@ export default function Navbar({ user, setUser }) {
                 <span>{item.name}</span>
               </Link>
             ))}
+
+            {/* Admin Dashboard Link (Desktop) */}
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
+              >
+                <span className="text-lg"><FaShieldAlt /></span>
+                <span>Admin Dashboard</span>
+              </Link>
+            )}
           </div>
 
           {/* Desktop Right Section */}
@@ -152,6 +164,17 @@ export default function Navbar({ user, setUser }) {
                   <span>{item.name}</span>
                 </Link>
               ))}
+              {/* Admin Dashboard Link (Mobile) */}
+              {user?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-blue-800 rounded-lg transition-colors"
+                >
+                  <FaShieldAlt className="text-xl" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              )}
               
               {user ? (
                 <>
