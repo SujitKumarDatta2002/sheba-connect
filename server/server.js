@@ -45,6 +45,9 @@ app.get("/", (req, res) => {
   res.send("ShebaConnect Backend Running");
 });
 
+// Add these with your other routes
+const publicRoutes = require("./routes/publicRoutes");
+app.use("/api", publicRoutes); // Public routes don't need auth
 // Test route
 app.get("/api/test", (req, res) => {
   res.json({ message: "Backend connected!" });

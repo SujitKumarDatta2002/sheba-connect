@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminDashboard from "./pages/AdminDashboard";
+import ServiceManagement from "./pages/admin/ServiceManagement";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -84,12 +85,23 @@ function App() {
           }
         />
 
+
           {/* Admin Dashboard Route */}
           <Route
             path="/admin"
             element={
               <PrivateRoute>
                 <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Service Management Route */}
+          <Route
+            path="/admin/services"
+            element={
+              <PrivateRoute>
+                <ServiceManagement />
               </PrivateRoute>
             }
           />
