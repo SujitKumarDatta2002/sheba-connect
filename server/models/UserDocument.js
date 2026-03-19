@@ -45,11 +45,11 @@ const UserDocumentSchema = new mongoose.Schema({
   },
 
   documentType: {
-    type: String,
-    required: true,
-    enum: ["passport", "nid", "birthCertificate", "tin", "drivingLicense"] // Add enum for consistency
+  type: String,
+  required: true,
+  enum: ["passport", "nid", "birthCertificate", "tin", "drivingLicense", "citizenship", "educationalCertificate"]
   },
-
+  
   fileName: {
     type: String,
     required: true  // Store original filename
