@@ -6,6 +6,10 @@ const cors = require("cors");
 const connectDB = require("./config/db");
 const path = require('path'); // Add this import
 
+const serviceRoutes = require('./routes/serviceRoutes');
+const helplineRoutes = require('./routes/helplineRoutes');
+
+
 // Import models
 require("./models/User");
 require("./models/Complaint");
@@ -53,6 +57,10 @@ app.use("/api/documents", documentRoutes);
 // User profile routes
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
+
+
+app.use('/api/services', serviceRoutes);
+app.use('/api/helplines', helplineRoutes);
 
 const PORT = process.env.PORT || 5000;
 
