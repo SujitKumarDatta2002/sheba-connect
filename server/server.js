@@ -71,6 +71,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/helplines', helplineRoutes);
 
+
+const officeRoutes = require('./routes/officeRoutes');
+app.use('/api/offices', officeRoutes);
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
