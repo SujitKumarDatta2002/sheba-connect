@@ -10,8 +10,10 @@ import {
   FaTrash, FaEdit, FaSearch, FaFilter, FaChevronDown,
   FaBan, FaUnlock, FaLock, FaUserCog, FaBuilding,
   FaCalendarAlt, FaComment, FaCheck, FaTimes, FaPlus,
-  FaUpload, FaPaperPlane, FaStar, FaRegStar
+  FaUpload, FaPaperPlane, FaStar, FaRegStar,
+  FaFilePdf
 } from "react-icons/fa";
+import { generateServiceReport, generateUserActivityReport, generateCombinedReport } from "../utils/reportGenerator";
 import AdminSolutions from "../components/AdminSolutions";
 
 export default function AdminDashboard() {
@@ -39,7 +41,70 @@ export default function AdminDashboard() {
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [adminComment, setAdminComment] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [dateRange, setDateRange] = useState({
+    start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  // Report generation handlers
+  const handleGenerateServiceReport = async () => {
+    setGenerating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const statsRes = await axios.get(
+        `http://localhost:5000/api/reports/service-stats?startDate=${dateRange.start}&endDate=${dateRange.end}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const servicesRes = await axios.get(
+        'http://localhost:5000/api/admin/services',
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await generateServiceReport(servicesRes.data, statsRes.data, dateRange);
+      showNotification('Service report generated successfully', 'success');
+    } catch (err) {
+      console.error('Error generating service report:', err);
+      showNotification('Failed to generate service report', 'error');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleGenerateUserReport = async () => {
+    setGenerating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const statsRes = await axios.get(
+        `http://localhost:5000/api/reports/user-stats?startDate=${dateRange.start}&endDate=${dateRange.end}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await generateUserActivityReport(statsRes.data.users, statsRes.data, dateRange);
+      showNotification('User activity report generated successfully', 'success');
+    } catch (err) {
+      console.error('Error generating user report:', err);
+      showNotification('Failed to generate user report', 'error');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleGenerateCombinedReport = async () => {
+    setGenerating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const statsRes = await axios.get(
+        `http://localhost:5000/api/reports/combined-stats?startDate=${dateRange.start}&endDate=${dateRange.end}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await generateCombinedReport(statsRes.data);
+      showNotification('Comprehensive report generated successfully', 'success');
+    } catch (err) {
+      console.error('Error generating combined report:', err);
+      showNotification('Failed to generate combined report', 'error');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   useEffect(() => {
     checkAdmin();
@@ -181,8 +246,160 @@ export default function AdminDashboard() {
     { id: "complaints", name: "Complaint Management", icon: FaClipboardList, description: "Review and process citizen complaints" },
     { id: "solutions", name: "Solution Review", icon: FaLightbulb, description: "Verify user-submitted solutions" },
     { id: "documents", name: "Document Verification", icon: FaFileAlt, description: "Verify citizen documents" },
-    { id: "settings", name: "System Settings", icon: FaCog, description: "Configure system parameters" }
+    { id: "settings", name: "System Settings", icon: FaCog, description: "Configure system parameters" },
+    { id: "reports", name: "Reports", icon: FaFilePdf, description: "Generate and download reports" }
   ];
+            {/* Reports Tab */}
+            {activeTab === "reports" && (
+              <div className="space-y-6">
+                {/* Date Range Selector */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                      <FaCalendarAlt className="text-purple-600" />
+                      Report Period
+                    </h3>
+                    <button
+                      onClick={() => setShowDatePicker(!showDatePicker)}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      {showDatePicker ? 'Hide' : 'Select Date Range'}
+                    </button>
+                  </div>
+                  {showDatePicker && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                        <input
+                          type="date"
+                          value={dateRange.start}
+                          onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                        <input
+                          type="date"
+                          value={dateRange.end}
+                          onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Report Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Service Usage Report */}
+                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <FaChartBar className="text-blue-600 text-2xl" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">Service Usage Report</h3>
+                        <p className="text-sm text-gray-500">Service statistics and department analysis</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleGenerateServiceReport}
+                      disabled={generating}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <FaDownload />
+                      {generating ? 'Generating...' : 'Generate Report'}
+                    </button>
+                  </div>
+
+                  {/* User Activity Report */}
+                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <FaUsers className="text-green-600 text-2xl" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">User Activity Report</h3>
+                        <p className="text-sm text-gray-500">User engagement and activity metrics</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleGenerateUserReport}
+                      disabled={generating}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <FaDownload />
+                      {generating ? 'Generating...' : 'Generate Report'}
+                    </button>
+                  </div>
+
+                  {/* Comprehensive Report */}
+                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <FaFilePdf className="text-purple-600 text-2xl" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">Comprehensive Report</h3>
+                        <p className="text-sm text-gray-500">Complete system overview and KPIs</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleGenerateCombinedReport}
+                      disabled={generating}
+                      className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <FaDownload />
+                      {generating ? 'Generating...' : 'Generate Report'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+                  <h3 className="font-semibold text-gray-800 mb-3">Quick Export Options</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Generate reports for specific time periods or export all data for analysis
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setDateRange({
+                          start: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Last 7 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateRange({
+                          start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Last 30 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateRange({
+                          start: new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Last 3 Months
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
   // Stats cards configuration
   const statsCards = [
