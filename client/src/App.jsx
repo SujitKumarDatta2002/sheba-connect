@@ -126,6 +126,7 @@ import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import NearbyOffices from "./pages/NearbyOffices"; // 👈 Import new page
+import ServiceManagement from "./pages/admin/ServiceManagement";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -215,6 +216,26 @@ function App() {
             </PrivateRoute>
           }
         />
+
+          {/* Admin Dashboard Route */}
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Service Management Route */}
+          <Route
+            path="/admin/services"
+            element={
+              <PrivateRoute>
+                <ServiceManagement />
+              </PrivateRoute>
+            }
+          />
 
       </Routes>
 
