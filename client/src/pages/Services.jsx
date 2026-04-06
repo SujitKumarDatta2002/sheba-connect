@@ -2,6 +2,7 @@
 // client/src/pages/Services.jsx
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // 👈 Import Link
 import axios from 'axios';
 import {
   FaSearch, FaFilter, FaPhone, FaClock, FaMoneyBillWave,
@@ -9,7 +10,8 @@ import {
   FaChevronDown, FaCheckCircle, FaAmbulance, FaFire,
   FaShieldAlt, FaBolt, FaRoad, FaHospital,
   FaSchool, FaCity, FaGlobe, FaExternalLinkAlt,
-  FaInfoCircle, FaTag, FaRegClock, FaDollarSign
+  FaInfoCircle, FaTag, FaRegClock, FaDollarSign,
+  FaEnvelope, FaMapMarkerAlt
 } from 'react-icons/fa';
 
 export default function Services() {
@@ -161,7 +163,7 @@ export default function Services() {
           <p className="text-blue-100 text-lg">Find government services and emergency contact numbers easily</p>
         </div>
 
-        {/* Tabs with better styling */}
+        {/* Tabs */}
         <div className="mb-8 flex space-x-2 bg-white p-2 rounded-xl shadow-sm">
           <button
             onClick={() => setActiveTab('services')}
@@ -188,7 +190,7 @@ export default function Services() {
         {/* Services Tab */}
         {activeTab === 'services' && (
           <>
-            {/* Search and Filter Bar - improved */}
+            {/* Search and Filter Bar */}
             <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1 relative">
@@ -326,8 +328,8 @@ export default function Services() {
                 {services.map(service => {
                   const urgencyStyle = getUrgencyStyle(service.urgency);
                   return (
-                    <div key={service._id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group">
-                      <div className="p-6">
+                    <div key={service._id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group flex flex-col">
+                      <div className="p-6 flex-1">
                         <div className="flex justify-between items-start mb-3">
                           <h3 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition">{service.name}</h3>
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${urgencyStyle.bg} ${urgencyStyle.text}`}>
@@ -337,25 +339,38 @@ export default function Services() {
                         
                         <p className="text-gray-600 mb-4 line-clamp-2">{service.description}</p>
 
-                        <div className="space-y-3 mb-4">
+                        <div className="space-y-3">
+                          {/* Department */}
                           <div className="flex items-center gap-2 text-sm">
                             <FaBuilding className="text-blue-500 w-4 h-4" />
                             <span className="font-medium text-gray-700">Department:</span>
                             <span className="text-gray-600">{service.department}</span>
                           </div>
 
+                          {/* Cost */}
                           <div className="flex items-center gap-2 text-sm">
                             <FaMoneyBillWave className="text-green-500 w-4 h-4" />
                             <span className="font-medium text-gray-700">Cost:</span>
                             <span className="text-gray-600">{formatCost(service.cost)}</span>
                           </div>
 
+                          {/* Location (NEW) */}
+                          {service.location && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <FaMapMarkerAlt className="text-red-500 w-4 h-4" />
+                              <span className="font-medium text-gray-700">Location:</span>
+                              <span className="text-gray-600">{service.location}</span>
+                            </div>
+                          )}
+
+                          {/* Processing Time */}
                           <div className="flex items-center gap-2 text-sm">
                             <FaClock className="text-orange-500 w-4 h-4" />
                             <span className="font-medium text-gray-700">Processing:</span>
                             <span className="text-gray-600">{service.processingTime}</span>
                           </div>
 
+                          {/* Required Documents */}
                           {service.requiredDocuments.length > 0 && (
                             <div className="flex items-start gap-2 text-sm">
                               <FaFileAlt className="text-purple-500 w-4 h-4 mt-1" />
@@ -375,6 +390,7 @@ export default function Services() {
                             </div>
                           )}
 
+                          {/* Eligibility */}
                           <div className="flex items-start gap-2 text-sm">
                             <FaCheckCircle className="text-green-500 w-4 h-4 mt-1" />
                             <div>
@@ -385,14 +401,55 @@ export default function Services() {
                         </div>
                       </div>
 
-                      <div className="border-t px-6 py-4 bg-gray-50 flex justify-between items-center">
-                        <div className="flex items-center gap-2 text-blue-600">
-                          <FaPhone className="w-4 h-4" />
-                          <a href={`tel:${service.helpline}`} className="font-medium hover:underline">{service.helpline}</a>
-                        </div>
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-                          Contact
-                        </button>
+                      {/* Footer with four action buttons */}
+                      <div className="border-t px-6 py-4 bg-gray-50 grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {/* Website */}
+                        {service.website ? (
+                          <a
+                            href={service.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-1 bg-blue-600 text-white px-2 py-2 rounded-lg hover:bg-blue-700 transition text-xs font-medium"
+                          >
+                            <FaGlobe className="w-3 h-3" /> Website
+                          </a>
+                        ) : (
+                          <span className="flex items-center justify-center gap-1 bg-gray-200 text-gray-500 px-2 py-2 rounded-lg text-xs font-medium cursor-not-allowed">
+                            <FaGlobe className="w-3 h-3" /> Website
+                          </span>
+                        )}
+
+                        {/* Phone */}
+                        {service.helpline && (
+                          <a
+                            href={`tel:${service.helpline}`}
+                            className="flex items-center justify-center gap-1 bg-green-600 text-white px-2 py-2 rounded-lg hover:bg-green-700 transition text-xs font-medium"
+                          >
+                            <FaPhone className="w-3 h-3" /> Call
+                          </a>
+                        )}
+
+                        {/* Email */}
+                        {service.email ? (
+                          <a
+                            href={`mailto:${service.email}`}
+                            className="flex items-center justify-center gap-1 bg-purple-600 text-white px-2 py-2 rounded-lg hover:bg-purple-700 transition text-xs font-medium"
+                          >
+                            <FaEnvelope className="w-3 h-3" /> Email
+                          </a>
+                        ) : (
+                          <span className="flex items-center justify-center gap-1 bg-gray-200 text-gray-500 px-2 py-2 rounded-lg text-xs font-medium cursor-not-allowed">
+                            <FaEnvelope className="w-3 h-3" /> Email
+                          </span>
+                        )}
+
+                        {/* Map - now links to internal page */}
+                        <Link
+                          to={`/nearby?serviceId=${service._id}`}
+                          className="flex items-center justify-center gap-1 bg-red-600 text-white px-2 py-2 rounded-lg hover:bg-red-700 transition text-xs font-medium"
+                        >
+                          <FaMapMarkerAlt className="w-3 h-3" /> Map
+                        </Link>
                       </div>
                     </div>
                   );
@@ -402,7 +459,7 @@ export default function Services() {
           </>
         )}
 
-        {/* Helplines Tab */}
+        {/* Helplines Tab (unchanged) */}
         {activeTab === 'helplines' && (
           <>
             {/* Search and Category Filter */}
@@ -534,3 +591,4 @@ export default function Services() {
     </div>
   );
 }
+
