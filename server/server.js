@@ -1,8 +1,11 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const path = require('path');
+
+// Support env files in both server/.env and project-root .env.
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 const serviceRoutes = require('./routes/serviceRoutes');
 const helplineRoutes = require('./routes/helplineRoutes');
@@ -82,6 +85,9 @@ app.use('/api/helplines', helplineRoutes);
 
 const officeRoutes = require('./routes/officeRoutes');
 app.use('/api/offices', officeRoutes);
+
+const serviceApplicationRoutes = require('./routes/serviceApplicationRoutes');
+app.use('/api/service-applications', serviceApplicationRoutes);
 
 const PORT = process.env.PORT || 5000;
 

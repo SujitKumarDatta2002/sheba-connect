@@ -22,6 +22,7 @@ export default function ServiceManagement() {
   const [serviceForm, setServiceForm] = useState({
     name: '',
     description: '',
+    processSteps: [''],
     department: '',
     cost: '',
     processingTime: '',
@@ -29,6 +30,10 @@ export default function ServiceManagement() {
     eligibilityCriteria: '',
     urgency: 'medium',
     helpline: '',
+    location: '',
+    website: '',
+    email: '',
+    mapUrl: '',
     isActive: true
   });
 
@@ -155,7 +160,12 @@ export default function ServiceManagement() {
 
       const method = editingItem ? 'put' : 'post';
 
-      await axios[method](url, serviceForm, {
+      const formData = {
+        ...serviceForm,
+        processSteps: serviceForm.processSteps.filter(step => step.trim() !== '')
+      };
+
+      await axios[method](url, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -236,13 +246,18 @@ export default function ServiceManagement() {
     setServiceForm({
       name: '',
       description: '',
+      processSteps: [''],
       department: '',
       cost: '',
       processingTime: '',
       requiredDocuments: [],
       eligibilityCriteria: '',
       urgency: 'medium',
-      helpline: ''
+      helpline: '',
+      location: '',
+      website: '',
+      email: '',
+      mapUrl: ''
     });
   };
 
@@ -263,6 +278,9 @@ export default function ServiceManagement() {
     setServiceForm({
       name: service.name,
       description: service.description,
+      processSteps: Array.isArray(service.processSteps)
+        ? (service.processSteps.length ? service.processSteps : [''])
+        : (service.processSteps ? [service.processSteps] : ['']),
       department: service.department,
       cost: service.cost,
       processingTime: service.processingTime,
@@ -270,6 +288,10 @@ export default function ServiceManagement() {
       eligibilityCriteria: service.eligibilityCriteria,
       urgency: service.urgency,
       helpline: service.helpline,
+      location: service.location || '',
+      website: service.website || '',
+      email: service.email || '',
+      mapUrl: service.mapUrl || '',
       isActive: service.isActive
     });
     setShowModal(true);
@@ -345,6 +367,34 @@ export default function ServiceManagement() {
     });
   };
 
+  const addProcessStep = () => {
+    setServiceForm(prev => ({
+      ...prev,
+      processSteps: [...prev.processSteps, '']
+    }));
+  };
+
+  const removeProcessStep = (index) => {
+    setServiceForm(prev => {
+      const updatedSteps = prev.processSteps.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        processSteps: updatedSteps.length ? updatedSteps : ['']
+      };
+    });
+  };
+
+  const updateProcessStep = (index, value) => {
+    setServiceForm(prev => {
+      const updatedSteps = [...prev.processSteps];
+      updatedSteps[index] = value;
+      return {
+        ...prev,
+        processSteps: updatedSteps
+      };
+    });
+  };
+
   const handleDocumentToggle = (doc) => {
     setServiceForm(prev => {
       const docs = prev.requiredDocuments.includes(doc)
@@ -380,6 +430,10 @@ export default function ServiceManagement() {
       default: FaPhone
     };
     return map[category] || map.default;
+  };
+
+  const getDocumentLabel = (docValue) => {
+    return documentOptions.find((doc) => doc.value === docValue)?.label || docValue;
   };
 
   return (
@@ -462,10 +516,10 @@ export default function ServiceManagement() {
           <>
             {/* Services Grid */}
             {activeTab === 'services' && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6 items-start">
                 {filteredServices.map(service => (
-                  <div key={service._id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all overflow-hidden border border-gray-200">
-                    <div className="p-6">
+                  <div key={service._id} className="w-full bg-white rounded-xl shadow-lg hover:shadow-xl transition-all overflow-hidden border border-gray-200 flex flex-col">
+                    <div className="p-6 flex-1">
                       <div className="flex justify-between items-start mb-3">
                         <h3 className="text-xl font-bold text-gray-800">{service.name}</h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -478,28 +532,113 @@ export default function ServiceManagement() {
                         </span>
                       </div>
                       
-                      <p className="text-gray-600 mb-4 line-clamp-2">{service.description}</p>
+                      <p className="text-gray-600 mb-4 line-clamp-2 min-h-[2.5rem]">{service.description || 'No description provided'}</p>
 
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <FaBuilding className="text-purple-500" />
-                          <span className="font-medium">Department:</span>
-                          <span className="text-gray-600">{service.department}</span>
+                      <div className="space-y-4 text-sm">
+                        <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">Core Information</p>
+                          <div className="flex items-center gap-2">
+                            <FaBuilding className="text-purple-500" />
+                            <span className="font-medium">Department:</span>
+                            <span className="text-gray-600">{service.department || 'Not provided'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaMoneyBillWave className="text-green-500" />
+                            <span className="font-medium">Cost:</span>
+                            <span className="text-gray-600">{service.cost !== undefined && service.cost !== null ? `৳${service.cost}` : 'Not provided'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaClock className="text-orange-500" />
+                            <span className="font-medium">Processing:</span>
+                            <span className="text-gray-600">{service.processingTime || 'Not provided'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaPhone className="text-blue-500" />
+                            <span className="font-medium">Helpline:</span>
+                            <span className="text-gray-600">{service.helpline || 'Not provided'}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <FaMoneyBillWave className="text-green-500" />
-                          <span className="font-medium">Cost:</span>
-                          <span className="text-gray-600">৳{service.cost}</span>
+
+                        <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">Contact & Location</p>
+                          <div className="flex items-center gap-2">
+                            <FaCity className="text-indigo-500" />
+                            <span className="font-medium">Location:</span>
+                            <span className="text-gray-600">{service.location || 'Not provided'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaFileAlt className="text-teal-500" />
+                            <span className="font-medium">Email:</span>
+                            <span className="text-gray-600 break-all">{service.email || 'Not provided'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaGlobe className="text-cyan-500" />
+                            <span className="font-medium">Website:</span>
+                            {service.website ? (
+                              <a
+                                href={service.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline break-all"
+                              >
+                                Open Link
+                              </a>
+                            ) : (
+                              <span className="text-gray-600">Not provided</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaRoad className="text-sky-500" />
+                            <span className="font-medium">Map:</span>
+                            {service.mapUrl ? (
+                              <a
+                                href={service.mapUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline break-all"
+                              >
+                                View Location
+                              </a>
+                            ) : (
+                              <span className="text-gray-600">Not provided</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <FaClock className="text-orange-500" />
-                          <span className="font-medium">Processing:</span>
-                          <span className="text-gray-600">{service.processingTime}</span>
+
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm">
+                          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase mb-1">Eligibility Criteria</p>
+                          <p className="text-gray-600 whitespace-pre-line min-h-[2.5rem]">{service.eligibilityCriteria || 'Not provided'}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <FaPhone className="text-blue-500" />
-                          <span className="font-medium">Helpline:</span>
-                          <span className="text-gray-600">{service.helpline}</span>
+
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm">
+                          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase mb-1">Process Steps</p>
+                          {service.processSteps?.length > 0 ? (
+                            <ol className="list-decimal list-inside text-gray-600 space-y-1 min-h-[3rem]">
+                              {service.processSteps.map((step, index) => (
+                                <li key={index}>{step}</li>
+                              ))}
+                            </ol>
+                          ) : (
+                            <p className="text-gray-600 min-h-[3rem]">No steps added</p>
+                          )}
+                        </div>
+
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm">
+                          <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase mb-2">Required Documents</p>
+                          <div className="flex flex-wrap gap-2 min-h-[2rem] content-start">
+                            {service.requiredDocuments?.length > 0 ? (
+                              service.requiredDocuments.map((doc) => (
+                                <span
+                                  key={doc}
+                                  className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs"
+                                >
+                                  {getDocumentLabel(doc)}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-gray-600">No documents listed</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -656,6 +795,38 @@ export default function ServiceManagement() {
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Process Steps</label>
+                      <div className="space-y-2">
+                        {serviceForm.processSteps.map((step, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={step}
+                              onChange={(e) => updateProcessStep(index, e.target.value)}
+                              placeholder={`Step ${index + 1}`}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeProcessStep(index)}
+                              className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                              title="Remove step"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={addProcessStep}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2"
+                        >
+                          <FaPlus /> Add Another Step
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
@@ -721,6 +892,54 @@ export default function ServiceManagement() {
                         onChange={(e) => setServiceForm({ ...serviceForm, helpline: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                       />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                        <input
+                          type="text"
+                          value={serviceForm.location}
+                          onChange={(e) => setServiceForm({ ...serviceForm, location: e.target.value })}
+                          placeholder="e.g., Dhaka, Agargaon"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+                        <input
+                          type="email"
+                          value={serviceForm.email}
+                          onChange={(e) => setServiceForm({ ...serviceForm, email: e.target.value })}
+                          placeholder="service@domain.gov.bd"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                        <input
+                          type="url"
+                          value={serviceForm.website}
+                          onChange={(e) => setServiceForm({ ...serviceForm, website: e.target.value })}
+                          placeholder="https://..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Map URL</label>
+                        <input
+                          type="url"
+                          value={serviceForm.mapUrl}
+                          onChange={(e) => setServiceForm({ ...serviceForm, mapUrl: e.target.value })}
+                          placeholder="https://maps.google.com/..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
                     </div>
 
                     <div>

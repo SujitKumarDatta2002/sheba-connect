@@ -127,6 +127,9 @@ import PrivateRoute from "./components/PrivateRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import NearbyOffices from "./pages/NearbyOffices"; // 👈 Import new page
 import ServiceManagement from "./pages/admin/ServiceManagement";
+import ServiceApplications from "./pages/admin/ServiceApplications";
+import Notifications from "./pages/Notifications";
+import ApplicationStatus from "./pages/ApplicationStatus";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -187,6 +190,24 @@ function App() {
           }
         />
 
+        <Route
+          path="/notifications"
+          element={
+            <PrivateRoute>
+              <Notifications />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/application-status"
+          element={
+            <PrivateRoute>
+              <ApplicationStatus />
+            </PrivateRoute>
+          }
+        />
+
         {/* Upload Document Route */}
         <Route
           path="/upload/:type"
@@ -217,22 +238,22 @@ function App() {
           }
         />
 
-          {/* Admin Dashboard Route */}
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute>
-                <AdminDashboard />
-              </PrivateRoute>
-            }
-          />
-
           {/* Service Management Route */}
           <Route
             path="/admin/services"
             element={
               <PrivateRoute>
                 <ServiceManagement />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Service Applications Route */}
+          <Route
+            path="/admin/applications"
+            element={
+              <PrivateRoute>
+                <ServiceApplications />
               </PrivateRoute>
             }
           />

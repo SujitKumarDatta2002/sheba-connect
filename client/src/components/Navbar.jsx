@@ -240,8 +240,9 @@
 
 
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { 
   FaClipboardList, 
   FaCogs, 
@@ -257,13 +258,58 @@ import {
   FaChartBar,
   FaUsers,
   FaLightbulb,
-  FaPhone
+  FaPhone,
+  FaClipboardCheck
 } from "react-icons/fa";
 
 export default function Navbar({ user, setUser }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [applicationCount, setApplicationCount] = useState(0);
+  const [userNotificationCount, setUserNotificationCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!user) {
+        setApplicationCount(0);
+        setUserNotificationCount(0);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setApplicationCount(0);
+          setUserNotificationCount(0);
+          return;
+        }
+
+        if (user.role === "admin") {
+          const res = await axios.get("http://localhost:5000/api/service-applications/admin/count", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setApplicationCount(Number(res.data?.pending || 0));
+          setUserNotificationCount(0);
+        } else {
+          const res = await axios.get("http://localhost:5000/api/service-applications/reminders", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUserNotificationCount(Array.isArray(res.data) ? res.data.length : 0);
+          setApplicationCount(0);
+        }
+      } catch (error) {
+        console.error("Error fetching navbar counts:", error);
+        setApplicationCount(0);
+        setUserNotificationCount(0);
+      }
+    };
+
+    fetchCounts();
+    const intervalId = setInterval(fetchCounts, 10000);
+
+    return () => clearInterval(intervalId);
+  }, [user]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -287,6 +333,7 @@ export default function Navbar({ user, setUser }) {
     { name: "Dashboard", path: "/admin", icon: <FaChartBar /> },
     { name: "Users", path: "/admin/users", icon: <FaUsers /> },
     { name: "Services", path: "/admin/services", icon: <FaCogs /> },
+    { name: "Applications", path: "/admin/applications", icon: <FaClipboardCheck /> },
     { name: "Solutions", path: "/admin/solutions", icon: <FaLightbulb /> },
     { name: "Helplines", path: "/admin/helplines", icon: <FaPhone /> },
   ];
@@ -315,7 +362,14 @@ export default function Navbar({ user, setUser }) {
                 to={item.path}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
               >
-                <span className="text-lg">{item.icon}</span>
+                <span className="text-lg relative">
+                  {item.icon}
+                  {user?.role === "admin" && item.path === "/admin/applications" && applicationCount > 0 && (
+                    <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                      {applicationCount}
+                    </span>
+                  )}
+                </span>
                 <span>{item.name}</span>
               </Link>
             ))}
@@ -327,10 +381,14 @@ export default function Navbar({ user, setUser }) {
               <>
                 {/* Notification Bell - Only for regular users */}
                 {user.role !== 'admin' && (
-                  <button className="relative p-2 hover:bg-blue-800 rounded-full">
+                  <Link to="/notifications" className="relative p-2 hover:bg-blue-800 rounded-full">
                     <FaBell className="text-xl" />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </button>
+                    {userNotificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                        {userNotificationCount}
+                      </span>
+                    )}
+                  </Link>
                 )}
 
                 {/* Profile Dropdown */}
@@ -378,6 +436,13 @@ export default function Navbar({ user, setUser }) {
                             onClick={() => setIsProfileOpen(false)}
                           >
                             Service Management
+                          </Link>
+                          <Link
+                            to="/admin/applications"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            Service Applications
                           </Link>
                         </>
                       ) : (
@@ -437,7 +502,14 @@ export default function Navbar({ user, setUser }) {
                   onClick={() => setIsMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-blue-800 rounded-lg transition-colors"
                 >
-                  <span className="text-xl">{item.icon}</span>
+                  <span className="text-xl relative">
+                    {item.icon}
+                    {user?.role === "admin" && item.path === "/admin/applications" && applicationCount > 0 && (
+                      <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                        {applicationCount}
+                      </span>
+                    )}
+                  </span>
                   <span>{item.name}</span>
                 </Link>
               ))}
@@ -477,6 +549,14 @@ export default function Navbar({ user, setUser }) {
                         >
                           <FaCogs className="text-xl" />
                           <span>Service Management</span>
+                        </Link>
+                        <Link
+                          to="/admin/applications"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-blue-800 rounded-lg transition-colors"
+                        >
+                          <FaClipboardCheck className="text-xl" />
+                          <span>Service Applications</span>
                         </Link>
                       </>
                     )}
