@@ -1,50 +1,7 @@
-// const express = require("express");
-// const router = express.Router();
-// const Complaint = require("../models/Complaint");
-
-// // Create complaint
-// router.post("/create", async (req, res) => {
-//   try {
-//     const complaint = new Complaint(req.body);
-//     await complaint.save();
-
-//     res.json(complaint);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// // Get all complaints
-// router.get("/", async (req, res) => {
-//   const complaints = await Complaint.find();
-//   res.json(complaints);
-// });
-
-// // Delete complaint
-// router.delete("/:id", async (req, res) => {
-//   try {
-
-//     await Complaint.findByIdAndDelete(req.params.id);
-
-//     res.json({ message: "Complaint deleted successfully" });
-
-//   } catch (error) {
-
-//     res.status(500).json({ error: error.message });
-
-//   }
-// });
-
-
-
-// module.exports = router;
-
-
 const express = require('express');
 const router = express.Router();
 const Complaint = require('../models/Complaint');
 
-// GET all complaints with populated user data
 router.get('/', async (req, res) => {
   try {
     const complaints = await Complaint.find()
@@ -56,7 +13,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// CREATE a new complaint
 router.post('/create', async (req, res) => {
   try {
     console.log("Received data:", req.body);
@@ -127,7 +83,6 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// UPDATE complaint status
 router.put('/:id', async (req, res) => {
   try {
     const { status, comment, updatedBy } = req.body;
@@ -137,7 +92,7 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Complaint not found' });
     }
 
-    // Add to timeline
+    //timeline
     complaint.timeline.push({
       status: status || complaint.status,
       comment: comment || `Status updated to ${status || complaint.status}`,
@@ -160,7 +115,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE complaint
 router.delete('/:id', async (req, res) => {
   try {
     await Complaint.findByIdAndDelete(req.params.id);

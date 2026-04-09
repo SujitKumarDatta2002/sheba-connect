@@ -1,3 +1,5 @@
+
+
 // import { useState, useEffect } from "react";
 // import axios from "axios";
 // import { 
@@ -45,7 +47,12 @@
 //   const [complaints, setComplaints] = useState([]);
 //   const [selectedComplaint, setSelectedComplaint] = useState(null);
 //   const [deleteTarget, setDeleteTarget] = useState(null);
+
+
+//   const searcT = "";
 //   const [searchTerm, setSearchTerm] = useState("");
+
+
 //   const [filterStatus, setFilterStatus] = useState("all");
 //   const [showForm, setShowForm] = useState(false);
 //   const [loading, setLoading] = useState(true);
@@ -71,6 +78,9 @@
 //   const [resolvedComplaint, setResolvedComplaint] = useState(null);
 //   const [surveySubmittedComplaints, setSurveySubmittedComplaints] = useState([]);
 //   const [hasShownSurveyPopup, setHasShownSurveyPopup] = useState(false);
+  
+//   // Report generation state
+//   const [generatingReport, setGeneratingReport] = useState(false);
 
 //   // Check if current user is admin
 //   const isAdmin = user?.role === "admin" || user?.email?.includes("admin");
@@ -222,9 +232,8 @@
 //     fetchComplaints();
 //   }, []);
 
-//   // Generate formal government complaint template (same as before)
+//   // Generate formal government complaint template
 //   const generateGovernmentTemplate = (department, keyword, userData) => {
-//     // ... (keep your existing template generation code)
 //     const currentDate = new Date().toLocaleDateString('en-GB', {
 //       day: 'numeric',
 //       month: 'long',
@@ -635,6 +644,213 @@
 //     doc.save(`complaint_${complaint.complaintNumber || complaint._id}.pdf`);
 //   };
 
+//   // Generate PDF report using PDF.co external API
+//   // ... inside the component, replace generateReport with this enhanced version
+
+// const generateReport = async () => {
+//   if (!user) return;
+
+//   const myComplaints = complaints.filter(c => isMyComplaint(c));
+//   if (myComplaints.length === 0) {
+//     alert('No complaints to report.');
+//     return;
+//   }
+
+//   // Helper to calculate resolution time (in days) from timeline
+//   const getResolutionInfo = (complaint) => {
+//     if (complaint.status !== 'Resolved') return null;
+//     const created = new Date(complaint.createdAt);
+//     // Find timeline entry where status changed to Resolved
+//     const resolvedEntry = complaint.timeline?.find(e => e.status === 'Resolved');
+//     if (resolvedEntry && resolvedEntry.date) {
+//       const resolved = new Date(resolvedEntry.date);
+//       const days = Math.ceil((resolved - created) / (1000 * 60 * 60 * 24));
+//       return { resolvedDate: resolved, days };
+//     }
+//     return { resolvedDate: null, days: null };
+//   };
+
+//   // Basic stats
+//   const stats = {
+//     total: myComplaints.length,
+//     pending: myComplaints.filter(c => c.status === 'Pending').length,
+//     processing: myComplaints.filter(c => c.status === 'Processing').length,
+//     resolved: myComplaints.filter(c => c.status === 'Resolved').length,
+//   };
+
+//   // Resolved complaints with resolution info
+//   const resolvedComplaints = myComplaints
+//     .filter(c => c.status === 'Resolved')
+//     .map(c => ({
+//       ...c,
+//       resolutionInfo: getResolutionInfo(c)
+//     }));
+
+//   // Calculate average resolution time (days) for resolved complaints
+//   const avgResolutionDays = resolvedComplaints.length > 0
+//     ? (resolvedComplaints.reduce((sum, c) => sum + (c.resolutionInfo.days || 0), 0) / resolvedComplaints.length).toFixed(1)
+//     : null;
+
+//   // Department breakdown
+//   const deptCount = {};
+//   myComplaints.forEach(c => {
+//     deptCount[c.department] = (deptCount[c.department] || 0) + 1;
+//   });
+
+//   // Priority breakdown
+//   const priorityCount = {
+//     low: 0,
+//     medium: 0,
+//     high: 0,
+//     emergency: 0
+//   };
+//   myComplaints.forEach(c => {
+//     if (c.priority) priorityCount[c.priority] = (priorityCount[c.priority] || 0) + 1;
+//   });
+
+//   // Build HTML
+//   const html = `
+//     <!DOCTYPE html>
+//     <html>
+//     <head>
+//       <meta charset="UTF-8">
+//       <title>ShebaConnect Complaint Report</title>
+//       <style>
+//         body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+//         .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 20px; }
+//         .header h1 { margin: 0; color: #2563eb; }
+//         .user-info { background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 30px; }
+//         .stats { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+//         .stat-card { flex: 1; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; text-align: center; min-width: 120px; }
+//         .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
+//         .breakdown { display: flex; gap: 30px; margin-bottom: 30px; flex-wrap: wrap; }
+//         .breakdown-section { flex: 1; background: #f9fafb; border-radius: 8px; padding: 15px; }
+//         .breakdown-section h3 { margin-top: 0; color: #374151; }
+//         .breakdown-list { list-style: none; padding: 0; margin: 0; }
+//         .breakdown-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+//         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+//         th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; font-size: 12px; }
+//         th { background-color: #f9fafb; font-weight: 600; }
+//         .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; }
+//         .resolved-note { font-size: 12px; margin-top: 5px; color: #10b981; }
+//       </style>
+//     </head>
+//     <body>
+//       <div class="header">
+//         <h1>ShebaConnect</h1>
+//         <p>Government of Bangladesh • Citizen Grievance Redressal System</p>
+//       </div>
+//       <div class="user-info">
+//         <strong>Report generated for:</strong> ${user.name} (${user.email})<br>
+//         <strong>NID:</strong> ${user.nid}<br>
+//         <strong>Date:</strong> ${new Date().toLocaleString()}
+//       </div>
+
+//       <!-- Summary Stats -->
+//       <div class="stats">
+//         <div class="stat-card"><div class="stat-value">${stats.total}</div><div>Total Complaints</div></div>
+//         <div class="stat-card"><div class="stat-value">${stats.pending}</div><div>Pending</div></div>
+//         <div class="stat-card"><div class="stat-value">${stats.processing}</div><div>Processing</div></div>
+//         <div class="stat-card"><div class="stat-value">${stats.resolved}</div><div>Resolved</div></div>
+//       </div>
+
+//       <!-- Department & Priority Breakdown -->
+//       <div class="breakdown">
+//         <div class="breakdown-section">
+//           <h3>📊 Complaints by Department</h3>
+//           <ul class="breakdown-list">
+//             ${Object.entries(deptCount).map(([dept, count]) => `<li><span>${dept}</span><span>${count}</span></li>`).join('')}
+//           </ul>
+//         </div>
+//         <div class="breakdown-section">
+//           <h3>⚠️ Complaints by Priority</h3>
+//           <ul class="breakdown-list">
+//             <li><span>Low</span><span>${priorityCount.low}</span></li>
+//             <li><span>Medium</span><span>${priorityCount.medium}</span></li>
+//             <li><span>High</span><span>${priorityCount.high}</span></li>
+//             <li><span>Emergency</span><span>${priorityCount.emergency}</span></li>
+//           </ul>
+//         </div>
+//       </div>
+
+//       ${avgResolutionDays ? `
+//       <div class="breakdown-section" style="margin-bottom: 20px;">
+//         <h3>⏱️ Average Resolution Time</h3>
+//         <p><strong>${avgResolutionDays} days</strong> from submission to resolution</p>
+//       </div>
+//       ` : ''}
+
+//       <h3>📋 Complaint Details</h3>
+//       <table>
+//         <thead>
+//           <tr>
+//             <th>Complaint #</th>
+//             <th>Department</th>
+//             <th>Issue</th>
+//             <th>Status</th>
+//             <th>Priority</th>
+//             <th>Date</th>
+//             ${stats.resolved > 0 ? '<th>Resolution Time</th>' : ''}
+//           </tr>
+//         </thead>
+//         <tbody>
+//           ${myComplaints.map(c => {
+//             const resolution = getResolutionInfo(c);
+//             return `
+//               <tr>
+//                 <td>${c.complaintNumber || c._id.slice(-6)}</td>
+//                 <td>${c.department}</td>
+//                 <td>${c.issueKeyword}</td>
+//                 <td>${c.status}</td>
+//                 <td>${c.priority}</td>
+//                 <td>${new Date(c.createdAt).toLocaleDateString()}</td>
+//                 ${stats.resolved > 0 ? `
+//                   <td>${resolution && resolution.days ? `${resolution.days} day(s)` : (c.status === 'Resolved' ? 'Not recorded' : '—')}</td>
+//                 ` : ''}
+//               </tr>
+//             `;
+//           }).join('')}
+//         </tbody>
+//       </table>
+
+//       <div class="footer">
+//         This report was generated automatically by ShebaConnect. For official use only.
+//       </div>
+//     </body>
+//     </html>
+//   `;
+
+//   // ... rest of the API call (same as before)
+//   setGeneratingReport(true);
+//   try {
+//     const response = await axios.post(
+//       'https://api.pdf.co/v1/pdf/convert/from/html',
+//       {
+//         name: `complaint_report_${user._id}.pdf`,
+//         html: html,
+//         margin: '20px',
+//         paperSize: 'Letter',
+//         async: false
+//       },
+//       {
+//         headers: {
+//           'x-api-key': 'muntaka.mubarrat.antorik@g.bracu.ac.bd_7bOKLjoVdjQc8cu8UleHOGAgQWssCk2bsFRUNI9hfk6EirfxdfG6zcWxSwkEM57p',
+//           'Content-Type': 'application/json'
+//         }
+//       }
+//     );
+
+//     if (response.data.error) throw new Error(response.data.error);
+//     const pdfUrl = response.data.url;
+//     window.open(pdfUrl, '_blank');
+//   } catch (err) {
+//     console.error('PDF generation error:', err);
+//     alert('Failed to generate report. Please try again later.');
+//   } finally {
+//     setGeneratingReport(false);
+//   }
+// };
+
 //   // Check if complaint belongs to current user
 //   const isMyComplaint = (complaint) => {
 //     if (!currentUser) return false;
@@ -1022,6 +1238,24 @@
 //             {/* Action Buttons */}
 //             <div className="flex items-center gap-3">
 //               <button
+//                 onClick={generateReport}
+//                 disabled={generatingReport}
+//                 className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:from-red-700 hover:to-pink-700 transition-all transform hover:scale-105 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+//               >
+//                 {generatingReport ? (
+//                   <>
+//                     <FaSpinner className="animate-spin" />
+//                     Generating...
+//                   </>
+//                 ) : (
+//                   <>
+//                     <FaFilePdf />
+//                     Download Report
+//                   </>
+//                 )}
+//               </button>
+
+//               <button
 //                 onClick={() => {
 //                   fetchUserSolutions();
 //                   setShowMySolutions(true);
@@ -1031,6 +1265,7 @@
 //                 <FaLightbulb />
 //                 My Solutions
 //               </button>
+
 //               <button
 //                 onClick={() => {
 //                   setShowForm(true);
@@ -1361,7 +1596,7 @@
 //           <div className="overflow-x-auto">
 //             <table className="w-full">
 //               <thead className="bg-gray-100">
-//                 <tr>
+//                  <tr>
 //                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Complaint #</th>
 //                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Citizen Details</th>
 //                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Department</th>
@@ -1370,27 +1605,27 @@
 //                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Status</th>
 //                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Date</th>
 //                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Actions</th>
-//                 </tr>
+//                  </tr>
 //               </thead>
 //               <tbody>
 //                 {loading ? (
-//                   <tr>
+//                    <tr>
 //                     <td colSpan="8" className="p-12 text-center">
 //                       <div className="flex justify-center items-center gap-3">
 //                         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
 //                         <span className="text-gray-500">Loading complaints from server...</span>
 //                       </div>
 //                     </td>
-//                   </tr>
+//                    </tr>
 //                 ) : filteredComplaints.length === 0 ? (
-//                   <tr>
+//                    <tr>
 //                     <td colSpan="8" className="p-12 text-center text-gray-500">
 //                       <FaClipboardList className="text-5xl mx-auto mb-3 text-gray-300" />
 //                       {activeTab === "my" ? 
 //                         "You haven't filed any complaints yet. Click 'File New Complaint' to get started." : 
 //                         "No complaints found"}
 //                     </td>
-//                   </tr>
+//                    </tr>
 //                 ) : (
 //                   filteredComplaints.map((c) => (
 //                     <tr key={c._id} className="border-t hover:bg-blue-50 transition-colors">
@@ -1810,23 +2045,6 @@
 //   );
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { 
@@ -1862,7 +2080,9 @@ import {
   FaLightbulb,
   FaThumbsUp,
   FaThumbsDown,
-  FaTimes
+  FaTimes,
+  FaLanguage,
+  FaRobot
 } from "react-icons/fa";
 import jsPDF from "jspdf";
 import SurveyModal from "../components/SurveyModal";
@@ -1895,6 +2115,23 @@ export default function Complaints({ user }) {
   const [showMySolutions, setShowMySolutions] = useState(false);
   const [userSolutions, setUserSolutions] = useState([]);
   
+  // Language state
+  const [formLanguage, setFormLanguage] = useState("en");
+  const [translating, setTranslating] = useState(false);
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const [translatedSections, setTranslatedSections] = useState({
+    complainantInfo: "",
+    complaintDetails: "",
+    communitySolutions: "",
+    officialFormat: ""
+  });
+  
+  // Translated user data
+  const [translatedUserData, setTranslatedUserData] = useState({
+    name: "",
+    address: ""
+  });
+  
   // Survey related states
   const [showSurvey, setShowSurvey] = useState(false);
   const [resolvedComplaint, setResolvedComplaint] = useState(null);
@@ -1904,17 +2141,14 @@ export default function Complaints({ user }) {
   // Report generation state
   const [generatingReport, setGeneratingReport] = useState(false);
 
-  // Check if current user is admin
   const isAdmin = user?.role === "admin" || user?.email?.includes("admin");
 
-  // Get current user data
   const getCurrentUser = () => {
     return user || JSON.parse(localStorage.getItem("user") || "{}");
   };
 
   const currentUser = getCurrentUser();
 
-  // Form state - pre-filled with user data
   const [formData, setFormData] = useState({
     department: "",
     issueKeyword: "",
@@ -1927,255 +2161,375 @@ export default function Complaints({ user }) {
     address: currentUser?.address || ""
   });
 
-  // Load survey submitted complaints from localStorage (user-specific)
-  useEffect(() => {
-    const userKey = `surveySubmitted_${currentUser?._id || currentUser?.email}`;
-    const submitted = localStorage.getItem(userKey);
-    if (submitted) {
-      setSurveySubmittedComplaints(JSON.parse(submitted));
-    }
-  }, [currentUser]);
-
-  // Save to localStorage whenever surveySubmittedComplaints changes (user-specific)
-  useEffect(() => {
-    const userKey = `surveySubmitted_${currentUser?._id || currentUser?.email}`;
-    localStorage.setItem(userKey, JSON.stringify(surveySubmittedComplaints));
-  }, [surveySubmittedComplaints, currentUser]);
-
-  // Check for newly resolved complaints that belong to the current user
-  useEffect(() => {
-    // Don't show survey for admin
-    if (isAdmin) return;
+  // Translate text using  API
+  const translateText = async (text, targetLang) => {
+    if (targetLang !== "bn" || !text || text.trim() === "") return text;
     
-    // Only check if we haven't shown the popup in this session
-    if (hasShownSurveyPopup) return;
-    
-    // Get current user's complaints that are resolved and not surveyed
-    const userResolvedComplaints = complaints.filter(c => 
-      c.status === "Resolved" && 
-      isMyComplaint(c) &&
-      !surveySubmittedComplaints.includes(c._id)
-    );
-    
-    // Show survey modal for the most recent unresolved resolved complaint
-    if (userResolvedComplaints.length > 0 && !showSurvey && !resolvedComplaint) {
-      const latestResolved = userResolvedComplaints[0];
-      setResolvedComplaint(latestResolved);
-      setShowSurvey(true);
-      setHasShownSurveyPopup(true);
-    }
-  }, [complaints, surveySubmittedComplaints, isAdmin, showSurvey, resolvedComplaint, hasShownSurveyPopup, currentUser]);
-
-  // Reset popup shown flag when user changes
-  useEffect(() => {
-    setHasShownSurveyPopup(false);
-  }, [currentUser]);
-
-  // Update formData when user changes
-  useEffect(() => {
-    const userData = getCurrentUser();
-    if (userData) {
-      setFormData(prev => ({
-        ...prev,
-        citizenName: userData.name || prev.citizenName || "",
-        citizenId: userData.nid || prev.citizenId || "",
-        contactNumber: userData.phone || prev.contactNumber || "",
-        email: userData.email || prev.email || "",
-        address: userData.address || prev.address || ""
-      }));
-    }
-  }, [user]);
-
-  // Get userId from user object or localStorage
-  const userId = currentUser?._id || "64b123456789abcdef123456";
-
-  // Check if user can share solution for this complaint (only the owner of resolved complaint)
-  const canShareSolution = (complaint) => {
-    // Only the owner of the complaint can share solution, and only if it's resolved
-    return complaint && 
-           complaint.status === "Resolved" && 
-           isMyComplaint(complaint);
-  };
-
-  // Fetch complaints from database
-  const fetchComplaints = async () => {
-    setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get("http://localhost:5000/api/complaints", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      const complaintsWithDetails = res.data.map(complaint => ({
-        ...complaint,
-        citizenName: complaint.citizenName || complaint.userId?.name || "Not Provided",
-        citizenId: complaint.citizenId || "N/A",
-        contactNumber: complaint.contactNumber || "N/A",
-        email: complaint.email || "N/A",
-        address: complaint.address || "N/A",
-        priority: complaint.priority || "medium",
-        complaintNumber: complaint.complaintNumber || `CMP${complaint._id?.slice(-6)}`,
-        userId: complaint.userId?._id || complaint.userId,
-        surveySubmitted: complaint.surveySubmitted || false,
-        timeline: complaint.timeline || [
-          {
-            status: "Submitted",
-            date: complaint.createdAt || new Date().toISOString(),
-            comment: "Complaint submitted successfully",
-            updatedBy: "System"
-          }
-        ]
-      }));
-      
-      setComplaints(complaintsWithDetails);
+      const response = await axios.post(
+        "http://localhost:5000/api/ai/translate",
+        { text, targetLang },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data.translated || text;
     } catch (error) {
-      console.error("Error fetching complaints:", error);
-      if (error.response?.status === 401) {
-        // Handle unauthorized
+      console.error("Translation error:", error);
+      return text;
+    }
+  };
+
+const handleAIGenerate = async () => {
+  if (!formData.department || !formData.issueKeyword) {
+    alert(formLanguage === "en" 
+      ? "Please select department and enter issue keyword first"
+      : "অনুগ্রহ করে প্রথমে বিভাগ নির্বাচন করুন এবং ইস্যু কীওয়ার্ড লিখুন");
+    return;
+  }
+
+  setGeneratingAI(true);
+  try {
+    const token = localStorage.getItem('token');
+    
+    const response = await axios.post(
+      "http://localhost:5000/api/ai/generate-complaint",
+      {
+        department: formData.department,
+        keyword: formData.issueKeyword,
+        description: formData.description,
+        citizenName: formData.citizenName,
+        citizenId: formData.citizenId,
+        address: formData.address,
+        contactNumber: formData.contactNumber,
+        language: formLanguage
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 60000
       }
-    }
-    setLoading(false);
-  };
+    );
 
-  // Fetch user's solutions
-  const fetchUserSolutions = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get("http://localhost:5000/api/solutions/my", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUserSolutions(res.data);
-    } catch (err) {
-      console.error("Error fetching solutions:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchComplaints();
-  }, []);
-
-  // Generate formal government complaint template
-  const generateGovernmentTemplate = (department, keyword, userData) => {
-    const currentDate = new Date().toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-
-    const departmentMap = {
-      "Passport Office": "The Regional Passport Officer",
-      "Electricity": "The General Manager, DESCO",
-      "Road Maintenance": "The Executive Engineer, Roads and Highways Department",
-      "Waste Management": "The Chief Waste Management Officer, Dhaka City Corporation",
-      "Health Services": "The Director, Health Services",
-      "Education": "The District Education Officer",
-      "Revenue": "The Deputy Commissioner, Revenue Department",
-      "Municipal Services": "The Mayor, City Corporation"
-    };
-
-    return `====================================================================
-              GOVERNMENT OF THE PEOPLE'S REPUBLIC OF BANGLADESH
-              Ministry of Public Administration
-              ${department}
-====================================================================
-
-FORMAL COMPLAINT LETTER
-
-Ref No: ${userData.complaintNumber || `CMP${Date.now().toString().slice(-8)}`}
-Date: ${currentDate}
-
-To,
-${departmentMap[department] || "The Concerned Authority"},
-${department},
-Government of Bangladesh,
-Dhaka.
-
-Through: Proper Channel
-
-Subject: Formal Complaint Regarding ${keyword}
-
-====================================================================
-              COMPLAINANT DETAILS
-====================================================================
-
-Name of Complainant   : ${userData.citizenName}
-National ID Number     : ${userData.citizenId}
-Permanent Address      : ${userData.address}
-Contact Number         : ${userData.contactNumber}
-Email Address          : ${userData.email || 'N/A'}
-
-====================================================================
-              COMPLAINT DETAILS
-====================================================================
-
-Department Concerned   : ${department}
-Nature of Complaint    : ${keyword}
-Priority Level         : ${userData.priority?.toUpperCase() || 'MEDIUM'}
-Date of Incident       : ${new Date().toLocaleDateString()}
-Location of Incident   : ${userData.address}
-
-====================================================================
-              DETAILED DESCRIPTION
-====================================================================
-
-Respected Sir/Madam,
-
-I, ${userData.citizenName}, bearing NID No. ${userData.citizenId}, a resident of ${userData.address}, would like to draw your kind attention to the following matter:
-
-${userData.description || "[Please provide description]"}
-
-====================================================================
-              DECLARATION
-====================================================================
-
-I, ${userData.citizenName}, do hereby declare that the information provided above is true and correct to the best of my knowledge and belief.
-
-                                            .....................
-                                            (Signature of Complainant)
-
-====================================================================
-              OFFICIAL USE ONLY
-====================================================================
-
-Complaint Registered By: [OFFICER NAME]
-Registration Date      : ${currentDate}
-Complaint Number       : ${userData.complaintNumber || `CMP${Date.now().toString().slice(-8)}`}
-
-                                                           OFFICIAL STAMP
-
-====================================================================
-
-Thanking you,
-
-Yours faithfully,
-${userData.citizenName}
-Mobile: ${userData.contactNumber}
-NID: ${userData.citizenId}
-
-====================================================================`;
-  };
-
-  // Handle department or keyword change to generate template
-  useEffect(() => {
-    if (formData.department && formData.issueKeyword) {
-      const template = generateGovernmentTemplate(
-        formData.department, 
-        formData.issueKeyword,
+    if (response.data.success) {
+      if (response.data.translatedName) {
+        setTranslatedUserData({
+          name: response.data.translatedName,
+          address: response.data.translatedAddress || formData.address
+        });
+      }
+      
+      const aiDescription = formLanguage === "bn" ? response.data.bangla : response.data.english;
+      setFormData(prev => ({ ...prev, description: aiDescription }));
+      
+      const template = await generateDynamicComplaintTemplate(
         {
           citizenName: formData.citizenName,
           citizenId: formData.citizenId,
           contactNumber: formData.contactNumber,
           email: formData.email,
           address: formData.address,
+          department: formData.department,
+          issueKeyword: formData.issueKeyword,
+          description: aiDescription,
           priority: formData.priority,
-          description: formData.description,
           complaintNumber: `CMP${Date.now().toString().slice(-8)}`
-        }
+        },
+        formLanguage,
+        aiDescription
       );
       setGeneratedTemplate(template);
       setEditedTemplate(template);
+      
+      alert(formLanguage === "en" 
+        ? "AI complaint generated successfully!"
+        : "এআই অভিযোগ সফলভাবে তৈরি হয়েছে!");
+    } else {
+      alert(response.data.message || (formLanguage === "en" 
+        ? "AI generation failed. Please try again."
+        : "এআই জেনারেশন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।"));
     }
-  }, [formData.department, formData.issueKeyword, formData.description, formData.priority]);
+  } catch (error) {
+    console.error("AI generation error:", error);
+    
+    let errorMessage = formLanguage === "en" 
+      ? "Failed to generate AI complaint. Please try again later."
+      : "এআই অভিযোগ তৈরি করতে ব্যর্থ হয়েছে। দয়া করে পরে আবার চেষ্টা করুন।";
+    
+    if (error.response) {
+      errorMessage = error.response.data?.message || errorMessage;
+    } else if (error.request) {
+      errorMessage = formLanguage === "en" 
+        ? "Server not responding. Please check if the backend is running."
+        : "সার্ভার সাড়া দিচ্ছে না। অনুগ্রহ করে ব্যাকএন্ড চলছে কিনা পরীক্ষা করুন।";
+    }
+    
+    alert(errorMessage);
+  } finally {
+    setGeneratingAI(false);
+  }
+};
+
+const translateUserData = async () => {
+  if (formLanguage !== "bn") {
+    setTranslatedUserData({
+      name: formData.citizenName,
+      address: formData.address
+    });
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.post(
+      "http://localhost:5000/api/ai/translate-user-data",
+      {
+        name: formData.citizenName,
+        address: formData.address,
+        targetLang: "bn"
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    setTranslatedUserData({
+      name: response.data.translatedName || formData.citizenName,
+      address: response.data.translatedAddress || formData.address
+    });
+  } catch (error) {
+    console.error("User data translation error:", error);
+    setTranslatedUserData({
+      name: formData.citizenName,
+      address: formData.address
+    });
+  }
+};
+  // Translate UI sections
+  const translateUISections = async () => {
+    if (formLanguage !== "bn") return;
+    
+    setTranslating(true);
+    try {
+      const sections = {
+        complainantInfo: "Complainant Information (As per NID)",
+        complaintDetails: "Complaint Details",
+        communitySolutions: "Community Solutions",
+        officialFormat: "Official Government Complaint Format"
+      };
+      
+      const translated = {};
+      for (const [key, value] of Object.entries(sections)) {
+        translated[key] = await translateText(value, "bn");
+      }
+      setTranslatedSections(translated);
+    } catch (error) {
+      console.error("Section translation error:", error);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+const generateDynamicComplaintTemplate = async (userData, lang = "en", aiGeneratedDescription = null) => {
+  const currentDate = new Date().toLocaleDateString(lang === "en" ? 'en-GB' : 'bn-BD', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const priorityText = {
+    low: lang === "en" ? "Low" : "নিম্ন",
+    medium: lang === "en" ? "Medium" : "মাঝারি",
+    high: lang === "en" ? "High" : "উচ্চ",
+    emergency: lang === "en" ? "Emergency" : "জরুরি"
+  };
+
+  const departmentMapBN = {
+    "Passport Office": "পাসপোর্ট অফিস",
+    "Electricity": "বিদ্যুৎ বিভাগ",
+    "Road Maintenance": "সড়ক রক্ষণাবেক্ষণ বিভাগ",
+    "Waste Management": "বর্জ্য ব্যবস্থাপনা বিভাগ",
+    "Health Services": "স্বাস্থ্য সেবা বিভাগ",
+    "Education": "শিক্ষা বিভাগ",
+    "Revenue": "রাজস্ব বিভাগ",
+    "Municipal Services": "পৌর সেবা বিভাগ"
+  };
+
+  const departmentName = lang === "bn" && departmentMapBN[userData.department] 
+    ? departmentMapBN[userData.department] 
+    : userData.department;
+
+  const citizenName = lang === "bn" ? (translatedUserData.name || userData.citizenName) : userData.citizenName;
+  const citizenAddress = lang === "bn" ? (translatedUserData.address || userData.address) : userData.address;
+  const finalDescription = aiGeneratedDescription || userData.description;
+  const template = `====================================================================
+${lang === "en" ? "GOVERNMENT OF THE PEOPLE'S REPUBLIC OF BANGLADESH" : "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার"}
+${lang === "en" ? "Ministry of Public Administration" : "জনপ্রশাসন মন্ত্রণালয়"}
+${departmentName}
+====================================================================
+
+${lang === "en" ? "FORMAL COMPLAINT LETTER" : "আনুষ্ঠানিক অভিযোগ পত্র"}
+
+${lang === "en" ? "Complaint No" : "অভিযোগ নং"}: ${userData.complaintNumber || `CMP${Date.now().toString().slice(-8)}`}
+${lang === "en" ? "Date" : "তারিখ"}: ${currentDate}
+
+${lang === "en" ? "To" : "প্রতি"},
+${lang === "en" ? "The Concerned Authority" : "সম্মানিত কর্তৃপক্ষ"},
+${departmentName},
+${lang === "en" ? "Government of Bangladesh" : "বাংলাদেশ সরকার"},
+${lang === "en" ? "Dhaka" : "ঢাকা"}.
+
+${lang === "en" ? "Subject" : "বিষয়"}: ${lang === "en" ? `FORMAL COMPLAINT REGARDING ${userData.issueKeyword.toUpperCase()}` : `${userData.issueKeyword} সংক্রান্ত আনুষ্ঠানিক অভিযোগ`}
+
+====================================================================
+${lang === "en" ? "COMPLAINANT DETAILS" : "অভিযোগকারীর বিবরণ"}
+====================================================================
+
+${lang === "en" ? "Name" : "নাম"}                    : ${citizenName}
+${lang === "en" ? "Father's/Spouse's Name" : "পিতা/স্বামীর নাম"}  : ${lang === "en" ? "[Father's/Spouse's Name]" : "[পিতার/স্বামীর নাম]"}
+${lang === "en" ? "National ID Number" : "জাতীয় পরিচয়পত্র নং"}      : ${userData.citizenId}
+${lang === "en" ? "Present/Permanent Address" : "বর্তমান/স্থায়ী ঠিকানা"}: ${citizenAddress}
+${lang === "en" ? "Contact Number" : "যোগাযোগ নম্বর"}          : ${userData.contactNumber}
+${lang === "en" ? "Email Address" : "ইমেইল ঠিকানা"}           : ${userData.email || 'N/A'}
+
+====================================================================
+${lang === "en" ? "COMPLAINT DETAILS" : "অভিযোগের বিবরণ"}
+====================================================================
+
+${lang === "en" ? "Department Concerned" : "বিভাগ"}    : ${departmentName}
+${lang === "en" ? "Nature of Complaint" : "অভিযোগের ধরন"}     : ${userData.issueKeyword}
+${lang === "en" ? "Priority Level" : "অগ্রাধিকার স্তর"}          : ${priorityText[userData.priority]}
+${lang === "en" ? "Date of Incident" : "ঘটনার তারিখ"}        : ${new Date().toLocaleDateString()}
+${lang === "en" ? "Location of Incident" : "ঘটনার স্থান"}    : ${citizenAddress}
+
+====================================================================
+${lang === "en" ? "DETAILED DESCRIPTION" : "বিস্তারিত বিবরণ"}
+====================================================================
+
+${lang === "en" ? "Respected Sir/Madam," : "মাননীয় মহোদয়/মহোদয়া,"}
+
+${lang === "en" ? "I" : "আমি"}, ${citizenName}, ${lang === "en" ? "son/daughter of" : "পুত্র/কন্যা"} [${lang === "en" ? "Father's Name" : "পিতার নাম"}], ${lang === "en" ? "bearing NID No" : "এনআইডি নং ধারী"} ${userData.citizenId}, ${lang === "en" ? "a resident of" : "এর বাসিন্দা"} ${citizenAddress}, ${lang === "en" ? "would like to draw your kind attention to the following matter" : "আপনার সদয় দৃষ্টি আকর্ষণ করে নিম্নোক্ত বিষয়টি জানাতে চাই"}:
+
+${finalDescription}
+
+${lang === "en" ? "This issue has been causing significant hardship and inconvenience." : "এই সমস্যাটি উল্লেখযোগ্য কষ্ট ও অসুবিধার সৃষ্টি করছে।"}
+
+====================================================================
+${lang === "en" ? "SPECIFIC REQUESTS" : "নির্দিষ্ট অনুরোধ"}
+====================================================================
+
+${lang === "en" ? "Therefore, I humbly request your esteemed office to" : "অতএব, আমি আপনার কার্যালয়ের কাছে বিনীতভাবে অনুরোধ করছি"}:
+
+1. ${lang === "en" ? "Investigate the matter thoroughly at the earliest convenience." : "বিষয়টি দ্রুত তদন্ত করে প্রয়োজনীয় ব্যবস্থা গ্রহণ করা।"}
+2. ${lang === "en" ? "Take necessary action against the concerned parties (if applicable)." : "প্রয়োজনীয় ব্যবস্থা গ্রহণ করা (যদি প্রযোজ্য হয়)।"}
+3. ${lang === "en" ? "Provide a written update on the action taken within 7 working days." : "গৃহীত ব্যবস্থার একটি লিখিত আপডেট ৭ কার্যদিবসের মধ্যে প্রদান করা।"}
+4. ${lang === "en" ? "Implement preventive measures to avoid recurrence of such issues." : "এ ধরনের সমস্যার পুনরাবৃত্তি রোধে প্রতিরোধমূলক ব্যবস্থা গ্রহণ করা।"}
+
+====================================================================
+${lang === "en" ? "DECLARATION" : "ঘোষণা"}
+====================================================================
+
+${lang === "en" ? "I" : "আমি"}, ${citizenName}, ${lang === "en" ? "do hereby declare that the information provided above is true and correct to the best of my knowledge and belief." : "এতদ্বারা ঘোষণা করছি যে উপরোক্ত প্রদত্ত তথ্যগুলি সম্পূর্ণ সত্য ও সঠিক।"}
+
+                                            .....................
+                                            (${lang === "en" ? "Signature of Complainant" : "স্বাক্ষরকারীর স্বাক্ষর"})
+
+====================================================================
+${lang === "en" ? "OFFICIAL USE ONLY" : "অফিসিয়াল ব্যবহারের জন্য"}
+====================================================================
+
+${lang === "en" ? "Complaint Registered By" : "অভিযোগ নিবন্ধনকারী"}: [${lang === "en" ? "Officer Name" : "কর্মকর্তার নাম"}]
+${lang === "en" ? "Registration Date" : "নিবন্ধনের তারিখ"}      : ${currentDate}
+${lang === "en" ? "Complaint Number" : "অভিযোগ নম্বর"}       : ${userData.complaintNumber || `CMP${Date.now().toString().slice(-8)}`}
+
+                                                           ${lang === "en" ? "OFFICIAL STAMP" : "সরকারী সিলমোহর"}
+
+====================================================================
+
+${lang === "en" ? "Thanking you," : "ধন্যবাদান্তে,"}
+
+${lang === "en" ? "Yours faithfully," : "আন্তরিকভাবে,"}
+${citizenName}
+${lang === "en" ? "Contact" : "যোগাযোগ"}: ${userData.contactNumber}
+${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
+
+====================================================================`;
+
+  if (lang === "bn") {
+    return await translateText(template, "bn");
+  }
+  return template;
+};
+
+
+  // Generate template when form data changes
+  useEffect(() => {
+    const generateTemplate = async () => {
+      if (formData.department && formData.issueKeyword) {
+        const template = await generateDynamicComplaintTemplate(
+          {
+            citizenName: formData.citizenName,
+            citizenId: formData.citizenId,
+            contactNumber: formData.contactNumber,
+            email: formData.email,
+            address: formData.address,
+            department: formData.department,
+            issueKeyword: formData.issueKeyword,
+            description: formData.description,
+            priority: formData.priority,
+            complaintNumber: `CMP${Date.now().toString().slice(-8)}`
+          },
+          formLanguage
+        );
+        setGeneratedTemplate(template);
+        setEditedTemplate(template);
+      }
+    };
+    
+    generateTemplate();
+  }, [formData.department, formData.issueKeyword, formData.description, formData.priority, formLanguage]);
+
+  // Translate user data when language changes
+  useEffect(() => {
+    translateUserData();
+  }, [formLanguage, formData.citizenName, formData.address]);
+
+  // Translate UI sections when language changes
+  useEffect(() => {
+    translateUISections();
+  }, [formLanguage]);
+
+  const toggleFormLanguage = async () => {
+    const newLang = formLanguage === "en" ? "bn" : "en";
+    setFormLanguage(newLang);
+    
+    if (generatedTemplate) {
+      setTranslating(true);
+      try {
+        if (newLang === "bn") {
+          const translated = await translateText(generatedTemplate, "bn");
+          setEditedTemplate(translated);
+        } else {
+          const englishTemplate = await generateDynamicComplaintTemplate(
+            {
+              citizenName: formData.citizenName,
+              citizenId: formData.citizenId,
+              contactNumber: formData.contactNumber,
+              email: formData.email,
+              address: formData.address,
+              department: formData.department,
+              issueKeyword: formData.issueKeyword,
+              description: formData.description,
+              priority: formData.priority,
+              complaintNumber: `CMP${Date.now().toString().slice(-8)}`
+            },
+            "en"
+          );
+          setEditedTemplate(englishTemplate);
+        }
+      } catch (error) {
+        console.error("Language toggle translation error:", error);
+      } finally {
+        setTranslating(false);
+      }
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -2220,7 +2574,9 @@ NID: ${userData.citizenId}
         description: formData.description,
         priority: formData.priority || "medium",
         timeline: timeline,
-        surveySubmitted: false
+        surveySubmitted: false,
+        language: formLanguage,
+        formalTemplate: editedTemplate
       };
 
       const token = localStorage.getItem('token');
@@ -2252,6 +2608,7 @@ NID: ${userData.citizenId}
       setShowForm(false);
       setGeneratedTemplate("");
       setEditedTemplate("");
+      setFormLanguage("en");
       
     } catch (error) {
       console.error("Error details:", error);
@@ -2266,6 +2623,116 @@ NID: ${userData.citizenId}
     }
     setSubmitting(false);
   };
+
+  // Load survey submitted complaints from localStorage
+  useEffect(() => {
+    const userKey = `surveySubmitted_${currentUser?._id || currentUser?.email}`;
+    const submitted = localStorage.getItem(userKey);
+    if (submitted) {
+      setSurveySubmittedComplaints(JSON.parse(submitted));
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    const userKey = `surveySubmitted_${currentUser?._id || currentUser?.email}`;
+    localStorage.setItem(userKey, JSON.stringify(surveySubmittedComplaints));
+  }, [surveySubmittedComplaints, currentUser]);
+
+  useEffect(() => {
+    if (isAdmin) return;
+    if (hasShownSurveyPopup) return;
+    
+    const userResolvedComplaints = complaints.filter(c => 
+      c.status === "Resolved" && 
+      isMyComplaint(c) &&
+      !surveySubmittedComplaints.includes(c._id)
+    );
+    
+    if (userResolvedComplaints.length > 0 && !showSurvey && !resolvedComplaint) {
+      const latestResolved = userResolvedComplaints[0];
+      setResolvedComplaint(latestResolved);
+      setShowSurvey(true);
+      setHasShownSurveyPopup(true);
+    }
+  }, [complaints, surveySubmittedComplaints, isAdmin, showSurvey, resolvedComplaint, hasShownSurveyPopup, currentUser]);
+
+  useEffect(() => {
+    setHasShownSurveyPopup(false);
+  }, [currentUser]);
+
+  useEffect(() => {
+    const userData = getCurrentUser();
+    if (userData) {
+      setFormData(prev => ({
+        ...prev,
+        citizenName: userData.name || prev.citizenName || "",
+        citizenId: userData.nid || prev.citizenId || "",
+        contactNumber: userData.phone || prev.contactNumber || "",
+        email: userData.email || prev.email || "",
+        address: userData.address || prev.address || ""
+      }));
+    }
+  }, [user]);
+
+  const userId = currentUser?._id || "64b123456789abcdef123456";
+
+  const canShareSolution = (complaint) => {
+    return complaint && 
+           complaint.status === "Resolved" && 
+           isMyComplaint(complaint);
+  };
+
+  const fetchComplaints = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get("http://localhost:5000/api/complaints", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const complaintsWithDetails = res.data.map(complaint => ({
+        ...complaint,
+        citizenName: complaint.citizenName || complaint.userId?.name || "Not Provided",
+        citizenId: complaint.citizenId || "N/A",
+        contactNumber: complaint.contactNumber || "N/A",
+        email: complaint.email || "N/A",
+        address: complaint.address || "N/A",
+        priority: complaint.priority || "medium",
+        complaintNumber: complaint.complaintNumber || `CMP${complaint._id?.slice(-6)}`,
+        userId: complaint.userId?._id || complaint.userId,
+        surveySubmitted: complaint.surveySubmitted || false,
+        timeline: complaint.timeline || [
+          {
+            status: "Submitted",
+            date: complaint.createdAt || new Date().toISOString(),
+            comment: "Complaint submitted successfully",
+            updatedBy: "System"
+          }
+        ]
+      }));
+      
+      setComplaints(complaintsWithDetails);
+    } catch (error) {
+      console.error("Error fetching complaints:", error);
+    }
+    setLoading(false);
+  };
+
+  const fetchUserSolutions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get("http://localhost:5000/api/solutions/my", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUserSolutions(res.data);
+    } catch (err) {
+      console.error("Error fetching solutions:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchComplaints();
+  }, []);
 
   const deleteComplaint = async () => {
     try {
@@ -2312,7 +2779,6 @@ NID: ${userData.citizenId}
     }
   };
 
-  // Admin only: Update complaint status
   const updateComplaintStatus = async (complaintId, newStatus) => {
     if (!isAdmin) {
       alert("Only administrators can update complaint status");
@@ -2358,18 +2824,15 @@ NID: ${userData.citizenId}
     setUpdatingStatus(false);
   };
 
-  // Handle survey submission
   const handleSurveySubmitted = async () => {
     if (resolvedComplaint) {
       setSurveySubmittedComplaints(prev => [...prev, resolvedComplaint._id]);
     }
     setShowSurvey(false);
     setResolvedComplaint(null);
-    // Refresh complaints to update status
     fetchComplaints();
   };
 
-  // Function to manually open survey for a complaint
   const openSurveyForComplaint = (complaint) => {
     if (surveySubmittedComplaints.includes(complaint._id)) {
       alert("You have already submitted a survey for this complaint. Thank you for your feedback!");
@@ -2379,7 +2842,6 @@ NID: ${userData.citizenId}
     setShowSurvey(true);
   };
 
-  // Download template as PDF
   const downloadTemplateAsPDF = () => {
     const doc = new jsPDF();
     const lines = editedTemplate.split('\n');
@@ -2398,7 +2860,6 @@ NID: ${userData.citizenId}
     doc.save(`complaint_${formData.department}_${Date.now()}.pdf`);
   };
 
-  // Download template as text file
   const downloadTemplateAsText = () => {
     const element = document.createElement("a");
     const file = new Blob([editedTemplate], {type: 'text/plain'});
@@ -2409,7 +2870,6 @@ NID: ${userData.citizenId}
     document.body.removeChild(element);
   };
 
-  // Print template
   const printTemplate = () => {
     const printWindow = window.open('', '_blank');
     printWindow.document.write('<html><head><title>Complaint Form</title>');
@@ -2421,7 +2881,6 @@ NID: ${userData.citizenId}
     printWindow.print();
   };
 
-  // Export complaint as PDF
   const exportComplaintAsPDF = (complaint) => {
     const doc = new jsPDF();
     let y = 10;
@@ -2466,159 +2925,116 @@ NID: ${userData.citizenId}
     doc.save(`complaint_${complaint.complaintNumber || complaint._id}.pdf`);
   };
 
-  // Generate PDF report using PDF.co external API
-  // ... inside the component, replace generateReport with this enhanced version
+  const generateReport = async () => {
+    if (!user) return;
 
-const generateReport = async () => {
-  if (!user) return;
-
-  const myComplaints = complaints.filter(c => isMyComplaint(c));
-  if (myComplaints.length === 0) {
-    alert('No complaints to report.');
-    return;
-  }
-
-  // Helper to calculate resolution time (in days) from timeline
-  const getResolutionInfo = (complaint) => {
-    if (complaint.status !== 'Resolved') return null;
-    const created = new Date(complaint.createdAt);
-    // Find timeline entry where status changed to Resolved
-    const resolvedEntry = complaint.timeline?.find(e => e.status === 'Resolved');
-    if (resolvedEntry && resolvedEntry.date) {
-      const resolved = new Date(resolvedEntry.date);
-      const days = Math.ceil((resolved - created) / (1000 * 60 * 60 * 24));
-      return { resolvedDate: resolved, days };
+    const myComplaints = complaints.filter(c => isMyComplaint(c));
+    if (myComplaints.length === 0) {
+      alert('No complaints to report.');
+      return;
     }
-    return { resolvedDate: null, days: null };
-  };
 
-  // Basic stats
-  const stats = {
-    total: myComplaints.length,
-    pending: myComplaints.filter(c => c.status === 'Pending').length,
-    processing: myComplaints.filter(c => c.status === 'Processing').length,
-    resolved: myComplaints.filter(c => c.status === 'Resolved').length,
-  };
+    const getResolutionInfo = (complaint) => {
+      if (complaint.status !== 'Resolved') return null;
+      const created = new Date(complaint.createdAt);
+      const resolvedEntry = complaint.timeline?.find(e => e.status === 'Resolved');
+      if (resolvedEntry && resolvedEntry.date) {
+        const resolved = new Date(resolvedEntry.date);
+        const days = Math.ceil((resolved - created) / (1000 * 60 * 60 * 24));
+        return { resolvedDate: resolved, days };
+      }
+      return { resolvedDate: null, days: null };
+    };
 
-  // Resolved complaints with resolution info
-  const resolvedComplaints = myComplaints
-    .filter(c => c.status === 'Resolved')
-    .map(c => ({
-      ...c,
-      resolutionInfo: getResolutionInfo(c)
-    }));
+    const stats = {
+      total: myComplaints.length,
+      pending: myComplaints.filter(c => c.status === 'Pending').length,
+      processing: myComplaints.filter(c => c.status === 'Processing').length,
+      resolved: myComplaints.filter(c => c.status === 'Resolved').length,
+    };
 
-  // Calculate average resolution time (days) for resolved complaints
-  const avgResolutionDays = resolvedComplaints.length > 0
-    ? (resolvedComplaints.reduce((sum, c) => sum + (c.resolutionInfo.days || 0), 0) / resolvedComplaints.length).toFixed(1)
-    : null;
+    const deptCount = {};
+    myComplaints.forEach(c => {
+      deptCount[c.department] = (deptCount[c.department] || 0) + 1;
+    });
 
-  // Department breakdown
-  const deptCount = {};
-  myComplaints.forEach(c => {
-    deptCount[c.department] = (deptCount[c.department] || 0) + 1;
-  });
+    const priorityCount = { low: 0, medium: 0, high: 0, emergency: 0 };
+    myComplaints.forEach(c => {
+      if (c.priority) priorityCount[c.priority] = (priorityCount[c.priority] || 0) + 1;
+    });
 
-  // Priority breakdown
-  const priorityCount = {
-    low: 0,
-    medium: 0,
-    high: 0,
-    emergency: 0
-  };
-  myComplaints.forEach(c => {
-    if (c.priority) priorityCount[c.priority] = (priorityCount[c.priority] || 0) + 1;
-  });
-
-  // Build HTML
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>ShebaConnect Complaint Report</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: #2563eb; }
-        .user-info { background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 30px; }
-        .stats { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
-        .stat-card { flex: 1; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; text-align: center; min-width: 120px; }
-        .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
-        .breakdown { display: flex; gap: 30px; margin-bottom: 30px; flex-wrap: wrap; }
-        .breakdown-section { flex: 1; background: #f9fafb; border-radius: 8px; padding: 15px; }
-        .breakdown-section h3 { margin-top: 0; color: #374151; }
-        .breakdown-list { list-style: none; padding: 0; margin: 0; }
-        .breakdown-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; font-size: 12px; }
-        th { background-color: #f9fafb; font-weight: 600; }
-        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; }
-        .resolved-note { font-size: 12px; margin-top: 5px; color: #10b981; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>ShebaConnect</h1>
-        <p>Government of Bangladesh • Citizen Grievance Redressal System</p>
-      </div>
-      <div class="user-info">
-        <strong>Report generated for:</strong> ${user.name} (${user.email})<br>
-        <strong>NID:</strong> ${user.nid}<br>
-        <strong>Date:</strong> ${new Date().toLocaleString()}
-      </div>
-
-      <!-- Summary Stats -->
-      <div class="stats">
-        <div class="stat-card"><div class="stat-value">${stats.total}</div><div>Total Complaints</div></div>
-        <div class="stat-card"><div class="stat-value">${stats.pending}</div><div>Pending</div></div>
-        <div class="stat-card"><div class="stat-value">${stats.processing}</div><div>Processing</div></div>
-        <div class="stat-card"><div class="stat-value">${stats.resolved}</div><div>Resolved</div></div>
-      </div>
-
-      <!-- Department & Priority Breakdown -->
-      <div class="breakdown">
-        <div class="breakdown-section">
-          <h3>📊 Complaints by Department</h3>
-          <ul class="breakdown-list">
-            ${Object.entries(deptCount).map(([dept, count]) => `<li><span>${dept}</span><span>${count}</span></li>`).join('')}
-          </ul>
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>ShebaConnect Complaint Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+          .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 20px; }
+          .header h1 { margin: 0; color: #2563eb; }
+          .user-info { background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 30px; }
+          .stats { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+          .stat-card { flex: 1; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; text-align: center; min-width: 120px; }
+          .stat-value { font-size: 28px; font-weight: bold; color: #2563eb; }
+          .breakdown { display: flex; gap: 30px; margin-bottom: 30px; flex-wrap: wrap; }
+          .breakdown-section { flex: 1; background: #f9fafb; border-radius: 8px; padding: 15px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; font-size: 12px; }
+          th { background-color: #f9fafb; font-weight: 600; }
+          .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>ShebaConnect</h1>
+          <p>Government of Bangladesh • Citizen Grievance Redressal System</p>
         </div>
-        <div class="breakdown-section">
-          <h3>⚠️ Complaints by Priority</h3>
-          <ul class="breakdown-list">
-            <li><span>Low</span><span>${priorityCount.low}</span></li>
-            <li><span>Medium</span><span>${priorityCount.medium}</span></li>
-            <li><span>High</span><span>${priorityCount.high}</span></li>
-            <li><span>Emergency</span><span>${priorityCount.emergency}</span></li>
-          </ul>
+        <div class="user-info">
+          <strong>Report generated for:</strong> ${user.name} (${user.email})<br>
+          <strong>NID:</strong> ${user.nid}<br>
+          <strong>Date:</strong> ${new Date().toLocaleString()}
         </div>
-      </div>
 
-      ${avgResolutionDays ? `
-      <div class="breakdown-section" style="margin-bottom: 20px;">
-        <h3>⏱️ Average Resolution Time</h3>
-        <p><strong>${avgResolutionDays} days</strong> from submission to resolution</p>
-      </div>
-      ` : ''}
+        <div class="stats">
+          <div class="stat-card"><div class="stat-value">${stats.total}</div><div>Total Complaints</div></div>
+          <div class="stat-card"><div class="stat-value">${stats.pending}</div><div>Pending</div></div>
+          <div class="stat-card"><div class="stat-value">${stats.processing}</div><div>Processing</div></div>
+          <div class="stat-card"><div class="stat-value">${stats.resolved}</div><div>Resolved</div></div>
+        </div>
 
-      <h3>📋 Complaint Details</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Complaint #</th>
-            <th>Department</th>
-            <th>Issue</th>
-            <th>Status</th>
-            <th>Priority</th>
-            <th>Date</th>
-            ${stats.resolved > 0 ? '<th>Resolution Time</th>' : ''}
-          </tr>
-        </thead>
-        <tbody>
-          ${myComplaints.map(c => {
-            const resolution = getResolutionInfo(c);
-            return `
+        <div class="breakdown">
+          <div class="breakdown-section">
+            <h3>📊 Complaints by Department</h3>
+            <ul>
+              ${Object.entries(deptCount).map(([dept, count]) => `<li><strong>${dept}</strong>: ${count}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="breakdown-section">
+            <h3>⚠️ Complaints by Priority</h3>
+            <ul>
+              <li><strong>Low</strong>: ${priorityCount.low}</li>
+              <li><strong>Medium</strong>: ${priorityCount.medium}</li>
+              <li><strong>High</strong>: ${priorityCount.high}</li>
+              <li><strong>Emergency</strong>: ${priorityCount.emergency}</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>📋 Complaint Details</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Complaint #</th>
+              <th>Department</th>
+              <th>Issue</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${myComplaints.map(c => `
               <tr>
                 <td>${c.complaintNumber || c._id.slice(-6)}</td>
                 <td>${c.department}</td>
@@ -2626,76 +3042,66 @@ const generateReport = async () => {
                 <td>${c.status}</td>
                 <td>${c.priority}</td>
                 <td>${new Date(c.createdAt).toLocaleDateString()}</td>
-                ${stats.resolved > 0 ? `
-                  <td>${resolution && resolution.days ? `${resolution.days} day(s)` : (c.status === 'Resolved' ? 'Not recorded' : '—')}</td>
-                ` : ''}
               </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
+            `).join('')}
+          </tbody>
+        </table>
 
-      <div class="footer">
-        This report was generated automatically by ShebaConnect. For official use only.
-      </div>
-    </body>
-    </html>
-  `;
+        <div class="footer">
+          This report was generated automatically by ShebaConnect. For official use only.
+        </div>
+      </body>
+      </html>
+    `;
 
-  // ... rest of the API call (same as before)
-  setGeneratingReport(true);
-  try {
-    const response = await axios.post(
-      'https://api.pdf.co/v1/pdf/convert/from/html',
-      {
-        name: `complaint_report_${user._id}.pdf`,
-        html: html,
-        margin: '20px',
-        paperSize: 'Letter',
-        async: false
-      },
-      {
-        headers: {
-          'x-api-key': 'muntaka.mubarrat.antorik@g.bracu.ac.bd_7bOKLjoVdjQc8cu8UleHOGAgQWssCk2bsFRUNI9hfk6EirfxdfG6zcWxSwkEM57p',
-          'Content-Type': 'application/json'
+    setGeneratingReport(true);
+    try {
+      const response = await axios.post(
+        'https://api.pdf.co/v1/pdf/convert/from/html',
+        {
+          name: `complaint_report_${user._id}.pdf`,
+          html: html,
+          margin: '20px',
+          paperSize: 'Letter',
+          async: false
+        },
+        {
+          headers: {
+            'x-api-key': 'YOUR_PDF_CO_API_KEY_HERE',
+            'Content-Type': 'application/json'
+          }
         }
-      }
-    );
+      );
 
-    if (response.data.error) throw new Error(response.data.error);
-    const pdfUrl = response.data.url;
-    window.open(pdfUrl, '_blank');
-  } catch (err) {
-    console.error('PDF generation error:', err);
-    alert('Failed to generate report. Please try again later.');
-  } finally {
-    setGeneratingReport(false);
-  }
-};
+      if (response.data.error) throw new Error(response.data.error);
+      const pdfUrl = response.data.url;
+      window.open(pdfUrl, '_blank');
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      alert('Failed to generate report. Please try again later.');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
 
-  // Check if complaint belongs to current user
   const isMyComplaint = (complaint) => {
     if (!currentUser) return false;
     
     const complaintUserId = complaint.userId?._id || complaint.userId;
     const currentUserId = currentUser._id;
     
-    // Check by ID
     if (currentUserId && complaintUserId) {
       return complaintUserId === currentUserId;
     }
     
-    // Check by email
     if (currentUser.email && complaint.email && complaint.email !== "N/A") {
       return complaint.email.toLowerCase() === currentUser.email.toLowerCase();
     }
     
-    // Check by phone
     if (currentUser.phone && complaint.contactNumber && complaint.contactNumber !== "N/A") {
       return complaint.contactNumber === currentUser.phone;
     }
     
-    // Check by name (case insensitive)
     if (currentUser.name && complaint.citizenName && complaint.citizenName !== "Not Provided") {
       return complaint.citizenName.toLowerCase().trim() === currentUser.name.toLowerCase().trim();
     }
@@ -2703,7 +3109,6 @@ const generateReport = async () => {
     return false;
   };
 
-  // Filter complaints based on search and active tab
   const filteredComplaints = complaints.filter(c => {
     const matchesSearch = searchTerm === "" || 
       c.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -2721,7 +3126,6 @@ const generateReport = async () => {
     return matchesSearch && matchesFilter && matchesTab;
   });
 
-  // User-based stats
   const userComplaints = complaints.filter(c => isMyComplaint(c));
   const userPending = userComplaints.filter(c => c.status === "Pending").length;
   const userResolved = userComplaints.filter(c => c.status === "Resolved").length;
@@ -2818,7 +3222,7 @@ const generateReport = async () => {
         </div>
       )}
 
-      {/* Survey Modal - Only for user's own resolved complaints */}
+      {/* Survey Modal */}
       {showSurvey && resolvedComplaint && isMyComplaint(resolvedComplaint) && (
         <SurveyModal
           complaint={resolvedComplaint}
@@ -2855,9 +3259,7 @@ const generateReport = async () => {
                   <FaLightbulb className="text-3xl" />
                   <div>
                     <h2 className="text-xl font-bold">My Solutions</h2>
-                    <p className="text-sm text-purple-100">
-                      Solutions you've shared with the community
-                    </p>
+                    <p className="text-sm text-purple-100">Solutions you've shared with the community</p>
                   </div>
                 </div>
                 <button
@@ -2874,9 +3276,7 @@ const generateReport = async () => {
                 <div className="text-center py-12">
                   <FaLightbulb className="text-6xl text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-700 mb-2">No solutions yet</h3>
-                  <p className="text-gray-500 mb-4">
-                    When you resolve a complaint, share your solution to help others!
-                  </p>
+                  <p className="text-gray-500 mb-4">When you resolve a complaint, share your solution to help others!</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -2934,9 +3334,8 @@ const generateReport = async () => {
       {/* Main Content */}
       <div className="container mx-auto px-6">
         
-        {/* Stats Cards - User Specific */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* Total Complaints Card - User Specific */}
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all transform hover:-translate-y-1">
             <div className="flex items-center justify-between">
               <div>
@@ -2952,7 +3351,6 @@ const generateReport = async () => {
             </div>
           </div>
 
-          {/* Pending Card - User Specific */}
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500 hover:shadow-xl transition-all transform hover:-translate-y-1">
             <div className="flex items-center justify-between">
               <div>
@@ -2968,7 +3366,6 @@ const generateReport = async () => {
             </div>
           </div>
 
-          {/* In Progress Card - User Specific */}
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-400 hover:shadow-xl transition-all transform hover:-translate-y-1">
             <div className="flex items-center justify-between">
               <div>
@@ -2984,7 +3381,6 @@ const generateReport = async () => {
             </div>
           </div>
 
-          {/* Resolved Card - User Specific */}
           <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all transform hover:-translate-y-1">
             <div className="flex items-center justify-between">
               <div>
@@ -3111,21 +3507,38 @@ const generateReport = async () => {
                   <div>
                     <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                       <FaStamp className="text-blue-600" />
-                      File a Formal Complaint
+                      {formLanguage === "en" ? "File a Formal Complaint" : "আনুষ্ঠানিক অভিযোগ দায়ের করুন"}
                     </h2>
                     <p className="text-sm text-gray-500 mt-1">
-                      Your information is pre-filled from your profile as per government records
+                      {formLanguage === "en" 
+                        ? "Your information is pre-filled from your profile as per government records" 
+                        : "সরকারি রেকর্ড অনুযায়ী আপনার তথ্য প্রোফাইল থেকে পূর্বে পূরণ করা হয়েছে"}
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowForm(false);
-                      setShowSolutions(false);
-                    }}
-                    className="text-gray-500 hover:text-gray-700 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"
-                  >
-                    ✕
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {/* Language Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={toggleFormLanguage}
+                      disabled={translating}
+                      className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                      <FaLanguage />
+                      <span className="text-sm font-medium">
+                        {formLanguage === "en" ? "বাংলা" : "English"}
+                      </span>
+                      {translating && <FaSpinner className="animate-spin ml-1" />}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowForm(false);
+                        setShowSolutions(false);
+                      }}
+                      className="text-gray-500 hover:text-gray-700 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -3135,19 +3548,21 @@ const generateReport = async () => {
                   <div className="space-y-6">
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
                       <h3 className="font-semibold text-blue-800 border-b border-blue-200 pb-2 mb-4 flex items-center gap-2">
-                        <FaUserTie /> Complainant Information (As per NID)
+                        <FaUserTie /> 
+                        {formLanguage === "en" ? "Complainant Information (As per NID)" : (translatedSections.complainantInfo || "অভিযোগকারীর তথ্য (এনআইডি অনুযায়ী)")}
                       </h3>
                       
                       <div className="space-y-4">
                         <div className="grid grid-cols-3 gap-4">
                           <div className="col-span-1 text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <FaUser className="text-blue-500" /> Full Name:
+                            <FaUser className="text-blue-500" /> 
+                            {formLanguage === "en" ? "Full Name:" : "পুরো নাম:"}
                           </div>
                           <div className="col-span-2">
                             <input
                               type="text"
                               name="citizenName"
-                              value={formData.citizenName}
+                              value={formLanguage === "bn" ? translatedUserData.name || formData.citizenName : formData.citizenName}
                               readOnly
                               className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-800 font-medium"
                             />
@@ -3156,7 +3571,8 @@ const generateReport = async () => {
 
                         <div className="grid grid-cols-3 gap-4">
                           <div className="col-span-1 text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <FaIdCard className="text-blue-500" /> NID Number:
+                            <FaIdCard className="text-blue-500" /> 
+                            {formLanguage === "en" ? "NID Number:" : "এনআইডি নম্বর:"}
                           </div>
                           <div className="col-span-2">
                             <input
@@ -3171,7 +3587,8 @@ const generateReport = async () => {
 
                         <div className="grid grid-cols-3 gap-4">
                           <div className="col-span-1 text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <FaPhone className="text-blue-500" /> Contact:
+                            <FaPhone className="text-blue-500" /> 
+                            {formLanguage === "en" ? "Contact:" : "যোগাযোগ:"}
                           </div>
                           <div className="col-span-2">
                             <input
@@ -3186,7 +3603,8 @@ const generateReport = async () => {
 
                         <div className="grid grid-cols-3 gap-4">
                           <div className="col-span-1 text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <FaEnvelope className="text-blue-500" /> Email:
+                            <FaEnvelope className="text-blue-500" /> 
+                            {formLanguage === "en" ? "Email:" : "ইমেইল:"}
                           </div>
                           <div className="col-span-2">
                             <input
@@ -3201,12 +3619,13 @@ const generateReport = async () => {
 
                         <div className="grid grid-cols-3 gap-4">
                           <div className="col-span-1 text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <FaMapMarkerAlt className="text-blue-500" /> Address:
+                            <FaMapMarkerAlt className="text-blue-500" /> 
+                            {formLanguage === "en" ? "Address:" : "ঠিকানা:"}
                           </div>
                           <div className="col-span-2">
                             <textarea
                               name="address"
-                              value={formData.address}
+                              value={formLanguage === "bn" ? translatedUserData.address || formData.address : formData.address}
                               readOnly
                               rows="2"
                               className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-800 font-medium"
@@ -3221,13 +3640,15 @@ const generateReport = async () => {
                   <div className="space-y-6">
                     <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-xl border border-orange-100">
                       <h3 className="font-semibold text-orange-800 border-b border-orange-200 pb-2 mb-4 flex items-center gap-2">
-                        <FaBuilding /> Complaint Details
+                        <FaBuilding /> 
+                        {formLanguage === "en" ? "Complaint Details" : (translatedSections.complaintDetails || "অভিযোগের বিবরণ")}
                       </h3>
 
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                            <FaBuilding className="text-orange-500" /> Department *
+                            <FaBuilding className="text-orange-500" /> 
+                            {formLanguage === "en" ? "Department *" : "বিভাগ *"}
                           </label>
                           <select
                             name="department"
@@ -3236,28 +3657,33 @@ const generateReport = async () => {
                             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             required
                           >
-                            <option value="">Select Government Department</option>
-                            <option value="Passport Office">🏛️ Passport Office</option>
-                            <option value="Electricity">⚡ Electricity (DESCO)</option>
-                            <option value="Road Maintenance">🛣️ Roads & Highways</option>
-                            <option value="Waste Management">🗑️ Waste Management</option>
-                            <option value="Health Services">🏥 Health Services</option>
-                            <option value="Education">📚 Education</option>
-                            <option value="Revenue">💰 Revenue</option>
-                            <option value="Municipal Services">🏙️ Municipal Services</option>
+                            <option value="">
+                              {formLanguage === "en" ? "Select Government Department" : "সরকারি বিভাগ নির্বাচন করুন"}
+                            </option>
+                            <option value="Passport Office">🏛️ {formLanguage === "en" ? "Passport Office" : "পাসপোর্ট অফিস"}</option>
+                            <option value="Electricity">⚡ {formLanguage === "en" ? "Electricity (DESCO)" : "বিদ্যুৎ (ডেসকো)"}</option>
+                            <option value="Road Maintenance">🛣️ {formLanguage === "en" ? "Roads & Highways" : "সড়ক ও মহাসড়ক"}</option>
+                            <option value="Waste Management">🗑️ {formLanguage === "en" ? "Waste Management" : "বর্জ্য ব্যবস্থাপনা"}</option>
+                            <option value="Health Services">🏥 {formLanguage === "en" ? "Health Services" : "স্বাস্থ্য সেবা"}</option>
+                            <option value="Education">📚 {formLanguage === "en" ? "Education" : "শিক্ষা"}</option>
+                            <option value="Revenue">💰 {formLanguage === "en" ? "Revenue" : "রাজস্ব"}</option>
+                            <option value="Municipal Services">🏙️ {formLanguage === "en" ? "Municipal Services" : "পৌর সেবা"}</option>
                           </select>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                            <FaExclamationCircle className="text-orange-500" /> Issue Keyword *
+                            <FaExclamationCircle className="text-orange-500" /> 
+                            {formLanguage === "en" ? "Issue Keyword *" : "ইস্যু কীওয়ার্ড *"}
                           </label>
                           <input
                             type="text"
                             name="issueKeyword"
                             value={formData.issueKeyword}
                             onChange={handleChange}
-                            placeholder="e.g., passport delay, power outage, bill issue"
+                            placeholder={formLanguage === "en" 
+                              ? "e.g., passport delay, power outage, bill issue"
+                              : "যেমন: পাসপোর্ট বিলম্ব, বিদ্যুৎ বিভ্রাট, বিল সমস্যা"}
                             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                           />
@@ -3265,7 +3691,8 @@ const generateReport = async () => {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                            <FaExclamationCircle className="text-orange-500" /> Priority Level
+                            <FaExclamationCircle className="text-orange-500" /> 
+                            {formLanguage === "en" ? "Priority Level" : "অগ্রাধিকার স্তর"}
                           </label>
                           <select
                             name="priority"
@@ -3273,25 +3700,40 @@ const generateReport = async () => {
                             onChange={handleChange}
                             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <option value="low">🟢 Low Priority</option>
-                            <option value="medium">🟡 Medium Priority</option>
-                            <option value="high">🔴 High Priority (Urgent)</option>
+                            <option value="low">🟢 {formLanguage === "en" ? "Low Priority" : "নিম্ন অগ্রাধিকার"}</option>
+                            <option value="medium">🟡 {formLanguage === "en" ? "Medium Priority" : "মাঝারি অগ্রাধিকার"}</option>
+                            <option value="high">🔴 {formLanguage === "en" ? "High Priority (Urgent)" : "উচ্চ অগ্রাধিকার (জরুরি)"}</option>
                           </select>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                            <FaFileAlt className="text-orange-500" /> Detailed Description *
+                            <FaFileAlt className="text-orange-500" /> 
+                            {formLanguage === "en" ? "Detailed Description *" : "বিস্তারিত বিবরণ *"}
                           </label>
-                          <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            placeholder="Please provide detailed description of your complaint including dates, locations, and any relevant information..."
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            rows="4"
-                            required
-                          />
+                          <div className="flex gap-2">
+                            <textarea
+                              name="description"
+                              value={formData.description}
+                              onChange={handleChange}
+                              placeholder={formLanguage === "en"
+                                ? "Please provide detailed description of your complaint including dates, locations, and any relevant information..."
+                                : "অনুগ্রহ করে আপনার অভিযোগের বিস্তারিত বিবরণ দিন যার মধ্যে তারিখ, অবস্থান এবং যেকোনো প্রাসঙ্গিক তথ্য অন্তর্ভুক্ত রয়েছে..."}
+                              className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              rows="4"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAIGenerate}
+                              disabled={generatingAI}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 h-fit"
+                              title="Generate AI-powered complaint"
+                            >
+                              {generatingAI ? <FaSpinner className="animate-spin" /> : <FaRobot />}
+                              AI Generate
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -3301,11 +3743,21 @@ const generateReport = async () => {
                 {/* Solution Suggestions */}
                 {formData.department && formData.issueKeyword && showSolutions && (
                   <div className="mt-6">
+                    <div className="mb-2">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {formLanguage === "en" ? "Community Solutions" : (translatedSections.communitySolutions || "কমিউনিটি সমাধান")}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {formLanguage === "en" ? "Verified solutions from other users" : "অন্যান্য ব্যবহারকারীদের থেকে যাচাইকৃত সমাধান"}
+                      </p>
+                    </div>
                     <ViewSolutions
                       department={formData.department}
                       keyword={formData.issueKeyword}
                       onSelect={(solution) => {
-                        if (window.confirm("Would you like to use this solution as reference?")) {
+                        if (window.confirm(formLanguage === "en" 
+                          ? "Would you like to use this solution as reference?" 
+                          : "আপনি কি এই সমাধানটি রেফারেন্স হিসাবে ব্যবহার করতে চান?")) {
                           setFormData({
                             ...formData,
                             description: solution.description || formData.description
@@ -3322,7 +3774,10 @@ const generateReport = async () => {
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-bold text-blue-800 flex items-center gap-2 text-lg">
                         <FaStamp className="text-blue-600" />
-                        Official Government Complaint Format
+                        {formLanguage === "en" ? "Official Government Complaint Format" : (translatedSections.officialFormat || "সরকারি অভিযোগের ফরম্যাট")}
+                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          {formLanguage === "en" ? "English" : "বাংলা"}
+                        </span>
                       </h3>
                       <div className="flex gap-2">
                         <button
@@ -3330,7 +3785,7 @@ const generateReport = async () => {
                           onClick={() => navigator.clipboard.writeText(editedTemplate)}
                           className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center gap-2 transition-colors"
                         >
-                          <FaCopy /> Copy
+                          <FaCopy /> {formLanguage === "en" ? "Copy" : "অনুলিপি করুন"}
                         </button>
                         <button
                           type="button"
@@ -3344,25 +3799,36 @@ const generateReport = async () => {
                           onClick={downloadTemplateAsText}
                           className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 flex items-center gap-2 transition-colors"
                         >
-                          <FaDownload /> Text
+                          <FaDownload /> {formLanguage === "en" ? "Text" : "টেক্সট"}
                         </button>
                         <button
                           type="button"
                           onClick={printTemplate}
                           className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 flex items-center gap-2 transition-colors"
                         >
-                          <FaPrint /> Print
+                          <FaPrint /> {formLanguage === "en" ? "Print" : "প্রিন্ট"}
                         </button>
                       </div>
                     </div>
-                    <textarea
-                      value={editedTemplate}
-                      onChange={handleTemplateEdit}
-                      className="w-full h-96 p-4 text-sm font-mono border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                    />
+                    {translating ? (
+                      <div className="flex justify-center items-center h-96">
+                        <FaSpinner className="animate-spin text-3xl text-blue-600" />
+                        <span className="ml-3 text-gray-600">
+                          {formLanguage === "en" ? "Translating to Bengali..." : "বাংলায় অনুবাদ করা হচ্ছে..."}
+                        </span>
+                      </div>
+                    ) : (
+                      <textarea
+                        value={editedTemplate}
+                        onChange={handleTemplateEdit}
+                        className="w-full h-96 p-4 text-sm font-mono border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      />
+                    )}
                     <p className="text-xs text-gray-500 mt-2 flex items-center gap-2">
                       <FaShieldAlt className="text-green-500" />
-                      This format complies with the Government of Bangladesh official correspondence guidelines
+                      {formLanguage === "en" 
+                        ? "This format complies with the Government of Bangladesh official correspondence guidelines" 
+                        : "এই ফরম্যাটটি বাংলাদেশ সরকারের অফিসিয়াল চিঠিপত্র নির্দেশিকা মেনে চলে"}
                     </p>
                   </div>
                 )}
@@ -3376,7 +3842,7 @@ const generateReport = async () => {
                     }}
                     className="px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
                   >
-                    Cancel
+                    {formLanguage === "en" ? "Cancel" : "বাতিল করুন"}
                   </button>
                   <button
                     type="submit"
@@ -3386,12 +3852,12 @@ const generateReport = async () => {
                     {submitting ? (
                       <>
                         <FaSpinner className="animate-spin" />
-                        Submitting...
+                        {formLanguage === "en" ? "Submitting..." : "জমা দেওয়া হচ্ছে..."}
                       </>
                     ) : (
                       <>
                         <FaStamp />
-                        Submit Formal Complaint
+                        {formLanguage === "en" ? "Submit Formal Complaint" : "আনুষ্ঠানিক অভিযোগ জমা দিন"}
                       </>
                     )}
                   </button>
@@ -3418,7 +3884,7 @@ const generateReport = async () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-100">
-                 <tr>
+                <tr>
                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Complaint #</th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Citizen Details</th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Department</th>
@@ -3427,27 +3893,27 @@ const generateReport = async () => {
                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Status</th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Date</th>
                   <th className="p-4 text-left text-sm font-semibold text-gray-600">Actions</th>
-                 </tr>
+                </tr>
               </thead>
               <tbody>
                 {loading ? (
-                   <tr>
+                  <tr>
                     <td colSpan="8" className="p-12 text-center">
                       <div className="flex justify-center items-center gap-3">
                         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                         <span className="text-gray-500">Loading complaints from server...</span>
                       </div>
                     </td>
-                   </tr>
+                  </tr>
                 ) : filteredComplaints.length === 0 ? (
-                   <tr>
+                  <tr>
                     <td colSpan="8" className="p-12 text-center text-gray-500">
                       <FaClipboardList className="text-5xl mx-auto mb-3 text-gray-300" />
                       {activeTab === "my" ? 
                         "You haven't filed any complaints yet. Click 'File New Complaint' to get started." : 
                         "No complaints found"}
                     </td>
-                   </tr>
+                  </tr>
                 ) : (
                   filteredComplaints.map((c) => (
                     <tr key={c._id} className="border-t hover:bg-blue-50 transition-colors">
@@ -3528,7 +3994,7 @@ const generateReport = async () => {
                             <FaFilePdf />
                           </button>
                           
-                          {/* Share Solution Button - Only for the user who owns the resolved complaint */}
+                          {/* Share Solution Button */}
                           {canShareSolution(c) && (
                             <button
                               onClick={() => {
@@ -3542,7 +4008,7 @@ const generateReport = async () => {
                             </button>
                           )}
                           
-                          {/* Survey Button - Only for user's own resolved complaints */}
+                          {/* Survey Button */}
                           {!isAdmin && c.status === "Resolved" && isMyComplaint(c) && (
                             <button
                               onClick={() => openSurveyForComplaint(c)}
@@ -3785,7 +4251,7 @@ const generateReport = async () => {
                 View Timeline
               </button>
               
-              {/* Share Solution Button in View Modal - Only for the user who owns the resolved complaint */}
+              {/* Share Solution Button */}
               {canShareSolution(selectedComplaint) && (
                 <button
                   onClick={() => {
@@ -3800,7 +4266,7 @@ const generateReport = async () => {
                 </button>
               )}
               
-              {/* Survey Button in View Modal */}
+              {/* Survey Button */}
               {!isAdmin && selectedComplaint?.status === "Resolved" && isMyComplaint(selectedComplaint) && !surveySubmittedComplaints.includes(selectedComplaint._id) && (
                 <button
                   onClick={() => {
@@ -3866,4 +4332,3 @@ const generateReport = async () => {
     </div>
   );
 }
-
