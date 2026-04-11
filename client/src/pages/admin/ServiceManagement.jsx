@@ -1,4 +1,4 @@
-import API from "../config/api";
+import API from "../../config/api";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
