@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -262,7 +263,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       const servicesRes = await axios.get(
-        'http://localhost:5000/api/admin/services',
+        `${API}/api/admin/services`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -510,22 +511,22 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       
-      const usersRes = await axios.get("http://localhost:5000/api/admin/users", {
+      const usersRes = await axios.get(`${API}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(usersRes.data);
 
-      const complaintsRes = await axios.get("http://localhost:5000/api/admin/complaints", {
+      const complaintsRes = await axios.get(`${API}/api/admin/complaints`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setComplaints(complaintsRes.data);
 
-      const docsRes = await axios.get("http://localhost:5000/api/admin/documents", {
+      const docsRes = await axios.get(`${API}/api/admin/documents`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDocuments(docsRes.data);
 
-      const statsRes = await axios.get("http://localhost:5000/api/admin/stats", {
+      const statsRes = await axios.get(`${API}/api/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStats(statsRes.data);
@@ -542,7 +543,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/users/${userId}/role`,
+        `${API}/api/admin/users/${userId}/role`,
         { role: newRole },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -559,7 +560,7 @@ export default function AdminDashboard() {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, {
+      await axios.delete(`${API}/api/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showNotification("User deleted successfully", "success");
@@ -574,7 +575,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/complaints/${complaintId}/status`,
+        `${API}/api/admin/complaints/${complaintId}/status`,
         { status: newStatus, comment: adminComment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -593,7 +594,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/documents/${docId}/verify`,
+        `${API}/api/admin/documents/${docId}/verify`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );

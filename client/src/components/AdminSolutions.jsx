@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { 
@@ -20,7 +21,7 @@ export default function AdminSolutions() {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(
-        "http://localhost:5000/api/solutions/admin/pending",
+        `${API}/api/solutions/admin/pending`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -37,7 +38,7 @@ export default function AdminSolutions() {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/solutions/admin/${id}/verify`,
+        `${API}/api/solutions/admin/${id}/verify`,
         { status, adminFeedback },
         {
           headers: { Authorization: `Bearer ${token}` }

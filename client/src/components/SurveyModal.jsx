@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState } from "react";
 import axios from "axios";
 import { FaStar, FaRegStar, FaTimes, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
@@ -44,7 +45,7 @@ export default function SurveyModal({ complaint, onClose, onSubmit }) {
       }
 
       await axios.post(
-        "http://localhost:5000/api/surveys/submit",
+        `${API}/api/surveys/submit`,
         {
           complaintId: complaint._id,
           issueDate: formData.issueDate,

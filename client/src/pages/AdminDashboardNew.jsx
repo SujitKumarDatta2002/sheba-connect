@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -64,11 +65,11 @@ export default function AdminDashboard() {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [statsRes, complaintsRes, usersRes, docsRes, appointmentsRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/admin/stats", { headers }),
-        axios.get("http://localhost:5000/api/admin/complaints", { headers }),
-        axios.get("http://localhost:5000/api/admin/users", { headers }),
-        axios.get("http://localhost:5000/api/admin/documents", { headers }),
-        axios.get("http://localhost:5000/api/admin/appointments", { headers })
+        axios.get(`${API}/api/admin/stats`, { headers }),
+        axios.get(`${API}/api/admin/complaints`, { headers }),
+        axios.get(`${API}/api/admin/users`, { headers }),
+        axios.get(`${API}/api/admin/documents`, { headers }),
+        axios.get(`${API}/api/admin/appointments`, { headers })
       ]);
 
       setStats(statsRes.data);
@@ -106,7 +107,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/complaints/${complaintId}/status`,
+        `${API}/api/admin/complaints/${complaintId}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -121,7 +122,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/complaints/${complaintId}/edits/${editId}/review`,
+        `${API}/api/admin/complaints/${complaintId}/edits/${editId}/review`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -137,7 +138,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(
-        `http://localhost:5000/api/admin/appointments/${appointmentId}`,
+        `${API}/api/admin/appointments/${appointmentId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       showNotification("Appointment deleted", "success");
@@ -377,7 +378,7 @@ export default function AdminDashboard() {
       try {
         const token = localStorage.getItem('token');
         await axios.post(
-          `http://localhost:5000/api/admin/complaints/${selectedComplaint._id}/feedback`,
+          `${API}/api/admin/complaints/${selectedComplaint._id}/feedback`,
           { message: feedbackMsg, isQuestion, requiresResponse: isQuestion },
           { headers: { Authorization: `Bearer ${token}` } }
         );

@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { 
@@ -26,7 +27,7 @@ export default function SolutionSuggestions({ department, keyword, onSelect }) {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(
-        `http://localhost:5000/api/surveys/similar?department=${department}&keyword=${keyword}`,
+        `${API}/api/surveys/similar?department=${department}&keyword=${keyword}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }

@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
@@ -25,7 +26,7 @@ export default function Login({ setUser }) {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", formData);
+      const res = await axios.post("${API}/api/auth/login", formData);
       
       // Save to localStorage
       localStorage.setItem("token", res.data.token);

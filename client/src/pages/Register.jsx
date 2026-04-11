@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
@@ -46,7 +47,7 @@ export default function Register({ setUser }) {
       
       console.log("Sending registration data:", registrationData); // Debug log
       
-      const res = await axios.post("http://localhost:5000/api/auth/register", registrationData);
+      const res = await axios.post(`${API}/api/auth/register`, registrationData);
       
       console.log("Registration response:", res.data); // Debug log
       

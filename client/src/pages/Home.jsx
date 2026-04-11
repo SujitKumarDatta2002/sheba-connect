@@ -366,7 +366,7 @@
 
 
 
-
+import API from "../config/api";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -433,7 +433,7 @@ export default function Home({ user }) {
     const fetchSystemStats = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("http://localhost:5000/api/stats/system");
+        const res = await axios.get(`${API}/api/stats/system`);
         setSystemStats(res.data);
       } catch (err) {
         console.error("Error fetching system stats:", err);
