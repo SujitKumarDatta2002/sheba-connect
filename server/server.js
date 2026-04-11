@@ -100,6 +100,7 @@ const path = require('path');
 
 const serviceRoutes = require('./routes/serviceRoutes');
 const helplineRoutes = require('./routes/helplineRoutes');
+const surveyRoutes = require('./routes/surveyRoutes');
 const aiRoutes = require("./routes/ai");
 
 // Import models - ADD Survey here
@@ -174,12 +175,9 @@ app.use("/api/documents", documentRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
 
-// Survey routes - ADD THIS
-const surveyRoutes = require("./routes/surveyRoutes");
-app.use("/api/surveys", surveyRoutes);
-
 app.use('/api/services', serviceRoutes);
 app.use('/api/helplines', helplineRoutes);
+app.use('/api/surveys', surveyRoutes);
 
 const officeRoutes = require('./routes/officeRoutes');
 app.use('/api/offices', officeRoutes);
