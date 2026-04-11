@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -11,10 +10,14 @@ import {
   FaBan, FaUnlock, FaLock, FaUserCog, FaBuilding,
   FaCalendarAlt, FaComment, FaCheck, FaTimes, FaPlus,
   FaUpload, FaPaperPlane, FaStar, FaRegStar,
-  FaFilePdf
+  FaFilePdf, FaSpinner, FaUserCircle, FaEnvelope, FaPhone,
+  FaIdCard, FaMapMarkerAlt, FaChartLine
 } from "react-icons/fa";
-import { generateServiceReport, generateUserActivityReport, generateCombinedReport } from "../utils/reportGenerator";
 import AdminSolutions from "../components/AdminSolutions";
+import AdminComplaintDetail from "../components/AdminComplaintDetail";
+
+// PDF.co API Key
+const PDF_CO_API_KEY = 'muntaka.mubarrat.antorik@g.bracu.ac.bd_7bOKLjoVdjQc8cu8UleHOGAgQWssCk2bsFRUNI9hfk6EirfxdfG6zcWxSwkEM57p';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -34,8 +37,6 @@ export default function AdminDashboard() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showUserModal, setShowUserModal] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
@@ -47,21 +48,286 @@ export default function AdminDashboard() {
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [generating, setGenerating] = useState(false);
-  // Report generation handlers
+  const [selectedUserForReport, setSelectedUserForReport] = useState(null);
+  const [showUserReportModal, setShowUserReportModal] = useState(false);
+  const [reportFormat, setReportFormat] = useState("detailed");
+  const [selectedComplaintDetail, setSelectedComplaintDetail] = useState(null);
+  const [showComplaintDetail, setShowComplaintDetail] = useState(false);
+
+  // Helper function to generate PDF using PDF.co API
+  const generatePDF = async (html, filename) => {
+    try {
+      const response = await axios.post(
+        'https://api.pdf.co/v1/pdf/convert/from/html',
+        {
+          name: filename,
+          html: html,
+          margin: '20px',
+          paperSize: 'Letter',
+          async: false
+        },
+        {
+          headers: {
+            'x-api-key': PDF_CO_API_KEY,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+      
+      return response.data.url;
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      throw err;
+    }
+  };
+
+  // Generate user-wise report
+  const generateUserWiseReport = async (user) => {
+    setGenerating(true);
+    try {
+      const userComplaints = complaints.filter(c => 
+        c.userId === user._id || c.userId?._id === user._id || c.email === user.email
+      );
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>User Report - ${user.name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+            .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #4f46e5; }
+            .user-info { background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 30px; }
+            .stats { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+            .stat-card { flex: 1; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; text-align: center; min-width: 120px; }
+            .stat-value { font-size: 28px; font-weight: bold; color: #4f46e5; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; font-size: 12px; }
+            th { background-color: #f9fafb; font-weight: 600; }
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ShebaConnect</h1>
+            <p>Government of Bangladesh • Citizen Grievance Redressal System</p>
+          </div>
+          <div class="user-info">
+            <strong>User Report for:</strong> ${user.name}<br>
+            <strong>Email:</strong> ${user.email}<br>
+            <strong>Phone:</strong> ${user.phone}<br>
+            <strong>NID:</strong> ${user.nid}<br>
+            <strong>Address:</strong> ${user.address}<br>
+            <strong>Report Generated:</strong> ${new Date().toLocaleString()}
+          </div>
+
+          <div class="stats">
+            <div class="stat-card"><div class="stat-value">${userComplaints.length}</div><div>Total Complaints</div></div>
+            <div class="stat-card"><div class="stat-value">${userComplaints.filter(c => c.status === 'Resolved').length}</div><div>Resolved</div></div>
+            <div class="stat-card"><div class="stat-value">${userComplaints.filter(c => c.status === 'Pending').length}</div><div>Pending</div></div>
+          </div>
+
+          <h3>Complaint Details</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Complaint #</th>
+                <th>Department</th>
+                <th>Issue</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${userComplaints.map(c => `
+                <tr>
+                  <td>${c.complaintNumber || c._id.slice(-6)}</td>
+                  <td>${c.department}</td>
+                  <td>${c.issueKeyword}</td>
+                  <td>${c.status}</td>
+                  <td>${c.priority}</td>
+                  <td>${new Date(c.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            This report was generated automatically by ShebaConnect. For official use only.
+          </div>
+        </body>
+        </html>
+      `;
+
+      const pdfUrl = await generatePDF(html, `user_report_${user.name}_${Date.now()}.pdf`);
+      window.open(pdfUrl, '_blank');
+      showNotification(`Report for ${user.name} generated successfully`, 'success');
+      
+    } catch (err) {
+      console.error('Error generating user report:', err);
+      showNotification('Failed to generate user report', 'error');
+    } finally {
+      setGenerating(false);
+      setShowUserReportModal(false);
+    }
+  };
+  
+  // Generate all users report
+  const generateAllUsersReport = async () => {
+    setGenerating(true);
+    try {
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Complete Users Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+            .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #4f46e5; }
+            .summary { background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 30px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; font-size: 12px; }
+            th { background-color: #f9fafb; font-weight: 600; }
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ShebaConnect</h1>
+            <p>Government of Bangladesh • Citizen Grievance Redressal System</p>
+          </div>
+          <div class="summary">
+            <strong>Complete Users Report</strong><br>
+            Total Users: ${users.length}<br>
+            Admin Users: ${users.filter(u => u.role === 'admin').length}<br>
+            Citizen Users: ${users.filter(u => u.role === 'citizen').length}<br>
+            Report Generated: ${new Date().toLocaleString()}
+          </div>
+
+          <h3>Users List</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${users.map(u => `
+                <tr>
+                  <td>${u.name}</td>
+                  <td>${u.email}</td>
+                  <td>${u.phone}</td>
+                  <td>${u.role}</td>
+                  <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            This report was generated automatically by ShebaConnect. For official use only.
+          </div>
+        </body>
+        </html>
+      `;
+
+      const pdfUrl = await generatePDF(html, `all_users_report_${Date.now()}.pdf`);
+      window.open(pdfUrl, '_blank');
+      showNotification('All users report generated successfully', 'success');
+      
+    } catch (err) {
+      console.error('Error generating all users report:', err);
+      showNotification('Failed to generate all users report', 'error');
+    } finally {
+      setGenerating(false);
+    }
+  };
+  
+  // Generate service report
   const handleGenerateServiceReport = async () => {
     setGenerating(true);
     try {
       const token = localStorage.getItem('token');
-      const statsRes = await axios.get(
-        `http://localhost:5000/api/reports/service-stats?startDate=${dateRange.start}&endDate=${dateRange.end}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
       const servicesRes = await axios.get(
         'http://localhost:5000/api/admin/services',
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      await generateServiceReport(servicesRes.data, statsRes.data, dateRange);
+      
+      const services = servicesRes.data;
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Service Usage Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+            .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #4f46e5; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; font-size: 12px; }
+            th { background-color: #f9fafb; font-weight: 600; }
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ShebaConnect</h1>
+            <p>Service Usage Report</p>
+            <p>Period: ${dateRange.start} to ${dateRange.end}</p>
+          </div>
+
+          <h3>Services List</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Service Name</th>
+                <th>Department</th>
+                <th>Cost (BDT)</th>
+                <th>Processing Time</th>
+                <th>Urgency</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${services.map(s => `
+                <tr>
+                  <td>${s.name}</td>
+                  <td>${s.department}</td>
+                  <td>${s.cost}</td>
+                  <td>${s.processingTime}</td>
+                  <td>${s.urgency}</td>
+                  <td>${s.isActive ? 'Active' : 'Inactive'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Generated on ${new Date().toLocaleString()} | ShebaConnect Official Report
+          </div>
+        </body>
+        </html>
+      `;
+
+      const pdfUrl = await generatePDF(html, `service_report_${Date.now()}.pdf`);
+      window.open(pdfUrl, '_blank');
       showNotification('Service report generated successfully', 'success');
+      
     } catch (err) {
       console.error('Error generating service report:', err);
       showNotification('Failed to generate service report', 'error');
@@ -70,34 +336,150 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleGenerateUserReport = async () => {
+  // Generate user activity report
+  const handleGenerateUserActivityReport = async () => {
     setGenerating(true);
     try {
-      const token = localStorage.getItem('token');
-      const statsRes = await axios.get(
-        `http://localhost:5000/api/reports/user-stats?startDate=${dateRange.start}&endDate=${dateRange.end}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      await generateUserActivityReport(statsRes.data.users, statsRes.data, dateRange);
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>User Activity Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+            .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #4f46e5; }
+            .stats { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+            .stat-card { flex: 1; background: #f3f4f6; border-radius: 8px; padding: 15px; text-align: center; }
+            .stat-value { font-size: 28px; font-weight: bold; color: #4f46e5; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; font-size: 12px; }
+            th { background-color: #f9fafb; font-weight: 600; }
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ShebaConnect</h1>
+            <p>User Activity Report</p>
+            <p>Period: ${dateRange.start} to ${dateRange.end}</p>
+          </div>
+
+          <div class="stats">
+            <div class="stat-card"><div class="stat-value">${users.length}</div><div>Total Users</div></div>
+            <div class="stat-card"><div class="stat-value">${complaints.length}</div><div>Total Complaints</div></div>
+            <div class="stat-card"><div class="stat-value">${stats.resolutionRate || 0}%</div><div>Resolution Rate</div></div>
+          </div>
+
+          <h3>Recent Users</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${users.slice(0, 20).map(u => `
+                <tr>
+                  <td>${u.name}</td>
+                  <td>${u.email}</td>
+                  <td>${u.role}</td>
+                  <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Generated on ${new Date().toLocaleString()} | ShebaConnect Official Report
+          </div>
+        </body>
+        </html>
+      `;
+
+      const pdfUrl = await generatePDF(html, `user_activity_report_${Date.now()}.pdf`);
+      window.open(pdfUrl, '_blank');
       showNotification('User activity report generated successfully', 'success');
+      
     } catch (err) {
-      console.error('Error generating user report:', err);
-      showNotification('Failed to generate user report', 'error');
+      console.error('Error generating user activity report:', err);
+      showNotification('Failed to generate user activity report', 'error');
     } finally {
       setGenerating(false);
     }
   };
 
+  // Generate combined report
   const handleGenerateCombinedReport = async () => {
     setGenerating(true);
     try {
-      const token = localStorage.getItem('token');
-      const statsRes = await axios.get(
-        `http://localhost:5000/api/reports/combined-stats?startDate=${dateRange.start}&endDate=${dateRange.end}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      await generateCombinedReport(statsRes.data);
+      const totalResolved = complaints.filter(c => c.status === 'Resolved').length;
+      const resolutionRate = complaints.length > 0 ? Math.round((totalResolved / complaints.length) * 100) : 0;
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Comprehensive System Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+            .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #4f46e5; }
+            .summary { background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+            .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+            .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; text-align: center; }
+            .stat-value { font-size: 32px; font-weight: bold; color: #4f46e5; }
+            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #9ca3af; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ShebaConnect</h1>
+            <p>Comprehensive System Report</p>
+            <p>Generated on ${new Date().toLocaleString()}</p>
+          </div>
+
+          <div class="summary">
+            <h3>Executive Summary</h3>
+            <p>This report provides a comprehensive overview of ShebaConnect's performance, including user statistics, complaint resolution rates, and system activity for the specified period.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value">${users.length}</div><div>Total Users</div></div>
+            <div class="stat-card"><div class="stat-value">${complaints.length}</div><div>Total Complaints</div></div>
+            <div class="stat-card"><div class="stat-value">${resolutionRate}%</div><div>Resolution Rate</div></div>
+          </div>
+
+          <h3>Key Performance Indicators (KPIs)</h3>
+          <table>
+            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td>Total Users</td><td>${users.length}</td></tr>
+              <tr><td>Total Complaints</td><td>${complaints.length}</td></tr>
+              <tr><td>Pending Complaints</td><td>${stats.pendingComplaints}</td></tr>
+              <tr><td>Resolved Complaints</td><td>${stats.resolvedComplaints}</td></tr>
+              <tr><td>Resolution Rate</td><td>${resolutionRate}%</td></tr>
+              <tr><td>Total Documents</td><td>${stats.totalDocuments}</td></tr>
+              <tr><td>Pending Solutions</td><td>${stats.pendingSolutions}</td></tr>
+            </tbody>
+          </table>
+
+          <div class="footer">
+            This report was generated automatically by ShebaConnect. For official use only.
+          </div>
+        </body>
+        </html>
+      `;
+
+      const pdfUrl = await generatePDF(html, `comprehensive_report_${Date.now()}.pdf`);
+      window.open(pdfUrl, '_blank');
       showNotification('Comprehensive report generated successfully', 'success');
+      
     } catch (err) {
       console.error('Error generating combined report:', err);
       showNotification('Failed to generate combined report', 'error');
@@ -128,25 +510,21 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       
-      // Fetch users
       const usersRes = await axios.get("http://localhost:5000/api/admin/users", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(usersRes.data);
 
-      // Fetch complaints
       const complaintsRes = await axios.get("http://localhost:5000/api/admin/complaints", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setComplaints(complaintsRes.data);
 
-      // Fetch documents
       const docsRes = await axios.get("http://localhost:5000/api/admin/documents", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDocuments(docsRes.data);
 
-      // Fetch stats
       const statsRes = await axios.get("http://localhost:5000/api/admin/stats", {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -249,159 +627,7 @@ export default function AdminDashboard() {
     { id: "settings", name: "System Settings", icon: FaCog, description: "Configure system parameters" },
     { id: "reports", name: "Reports", icon: FaFilePdf, description: "Generate and download reports" }
   ];
-            {/* Reports Tab */}
-            {activeTab === "reports" && (
-              <div className="space-y-6">
-                {/* Date Range Selector */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                      <FaCalendarAlt className="text-purple-600" />
-                      Report Period
-                    </h3>
-                    <button
-                      onClick={() => setShowDatePicker(!showDatePicker)}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      {showDatePicker ? 'Hide' : 'Select Date Range'}
-                    </button>
-                  </div>
-                  {showDatePicker && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                        <input
-                          type="date"
-                          value={dateRange.start}
-                          onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                        <input
-                          type="date"
-                          value={dateRange.end}
-                          onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
 
-                {/* Report Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Service Usage Report */}
-                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <FaChartBar className="text-blue-600 text-2xl" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Service Usage Report</h3>
-                        <p className="text-sm text-gray-500">Service statistics and department analysis</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleGenerateServiceReport}
-                      disabled={generating}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <FaDownload />
-                      {generating ? 'Generating...' : 'Generate Report'}
-                    </button>
-                  </div>
-
-                  {/* User Activity Report */}
-                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                        <FaUsers className="text-green-600 text-2xl" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-800">User Activity Report</h3>
-                        <p className="text-sm text-gray-500">User engagement and activity metrics</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleGenerateUserReport}
-                      disabled={generating}
-                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <FaDownload />
-                      {generating ? 'Generating...' : 'Generate Report'}
-                    </button>
-                  </div>
-
-                  {/* Comprehensive Report */}
-                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                        <FaFilePdf className="text-purple-600 text-2xl" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Comprehensive Report</h3>
-                        <p className="text-sm text-gray-500">Complete system overview and KPIs</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleGenerateCombinedReport}
-                      disabled={generating}
-                      className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      <FaDownload />
-                      {generating ? 'Generating...' : 'Generate Report'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-                  <h3 className="font-semibold text-gray-800 mb-3">Quick Export Options</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Generate reports for specific time periods or export all data for analysis
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setDateRange({
-                          start: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0],
-                          end: new Date().toISOString().split('T')[0]
-                        });
-                      }}
-                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Last 7 Days
-                    </button>
-                    <button
-                      onClick={() => {
-                        setDateRange({
-                          start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
-                          end: new Date().toISOString().split('T')[0]
-                        });
-                      }}
-                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Last 30 Days
-                    </button>
-                    <button
-                      onClick={() => {
-                        setDateRange({
-                          start: new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString().split('T')[0],
-                          end: new Date().toISOString().split('T')[0]
-                        });
-                      }}
-                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Last 3 Months
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-  // Stats cards configuration
   const statsCards = [
     { 
       title: "Total Users", 
@@ -446,6 +672,76 @@ export default function AdminDashboard() {
         } text-white`}>
           {notification.message}
         </div>
+      )}
+
+      {/* User Report Modal */}
+      {showUserReportModal && selectedUserForReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold">Generate User Report</h3>
+                <button
+                  onClick={() => setShowUserReportModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <FaUserCircle className="text-4xl text-purple-600" />
+                <div>
+                  <p className="font-semibold text-gray-800">{selectedUserForReport.name}</p>
+                  <p className="text-sm text-gray-600">{selectedUserForReport.email}</p>
+                </div>
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Report Format</label>
+                <select
+                  value={reportFormat}
+                  onChange={(e) => setReportFormat(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="detailed">Detailed Report</option>
+                  <option value="summary">Summary Report</option>
+                </select>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => generateUserWiseReport(selectedUserForReport)}
+                  disabled={generating}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {generating ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+                  Generate Report
+                </button>
+                <button
+                  onClick={() => setShowUserReportModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Complaint Detail Modal */}
+      {showComplaintDetail && selectedComplaintDetail && (
+        <AdminComplaintDetail
+          complaint={selectedComplaintDetail}
+          onClose={() => {
+            setShowComplaintDetail(false);
+            setSelectedComplaintDetail(null);
+          }}
+          onUpdate={() => {
+            fetchDashboardData();
+          }}
+          showNotification={showNotification}
+        />
       )}
 
       {/* Header */}
@@ -503,16 +799,15 @@ export default function AdminDashboard() {
             {/* Overview Tab */}
             {activeTab === "overview" && (
               <div className="space-y-6">
-                {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   {statsCards.map((card, index) => (
-                    <div key={index} className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-${card.color}-500 hover:shadow-xl transition-all">
+                    <div key={index} className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-${card.color}-500 hover:shadow-xl transition-all transform hover:-translate-y-1">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-gray-500 mb-1">{card.title}</p>
                           <h3 className="text-3xl font-bold text-gray-800">{card.value}</h3>
                           <p className="text-xs text-gray-500 mt-1">{card.description}</p>
-                          <p className="text-xs text-${card.color}-600 mt-1">{card.change}</p>
+                          <p className={`text-xs text-${card.color}-600 mt-1`}>{card.change}</p>
                         </div>
                         <div className={`bg-${card.color}-100 p-3 rounded-lg`}>
                           <card.icon className={`text-${card.color}-600 text-2xl`} />
@@ -522,7 +817,6 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* Quick Actions Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
                     <div className="flex items-center gap-4 mb-4">
@@ -579,9 +873,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* Recent Activity */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Recent Complaints */}
                   <div className="bg-white rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <FaClipboardList className="text-purple-600" />
@@ -610,7 +902,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Recent Users */}
                   <div className="bg-white rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <FaUsers className="text-green-600" />
@@ -654,15 +945,25 @@ export default function AdminDashboard() {
                         Manage citizen accounts, roles, and permissions
                       </p>
                     </div>
-                    <div className="relative">
-                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search users by name, email, or phone..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 w-80"
-                      />
+                    <div className="flex gap-3">
+                      <button
+                        onClick={generateAllUsersReport}
+                        disabled={generating}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                      >
+                        {generating ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+                        Report All Users
+                      </button>
+                      <div className="relative">
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search users..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 w-80"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -677,7 +978,7 @@ export default function AdminDashboard() {
                         <th className="p-4 text-left text-sm font-semibold text-gray-600">Role</th>
                         <th className="p-4 text-left text-sm font-semibold text-gray-600">Joined</th>
                         <th className="p-4 text-left text-sm font-semibold text-gray-600">Actions</th>
-                      </tr>
+                       </tr>
                     </thead>
                     <tbody>
                       {filteredUsers.map(user => (
@@ -687,11 +988,11 @@ export default function AdminDashboard() {
                               <p className="font-medium text-gray-800">{user.name}</p>
                               <p className="text-sm text-gray-500">{user.email}</p>
                             </div>
-                          </td>
+                           </td>
                           <td className="p-4">
                             <p className="text-sm">{user.phone}</p>
-                            <p className="text-xs text-gray-500">{user.address}</p>
-                          </td>
+                            <p className="text-xs text-gray-500 truncate max-w-[200px]">{user.address}</p>
+                           </td>
                           <td className="p-4 font-mono text-sm">{user.nid}</td>
                           <td className="p-4">
                             <select
@@ -706,12 +1007,22 @@ export default function AdminDashboard() {
                               <option value="citizen">Citizen</option>
                               <option value="admin">Admin</option>
                             </select>
-                          </td>
+                           </td>
                           <td className="p-4 text-sm text-gray-600">
                             {new Date(user.createdAt).toLocaleDateString()}
-                          </td>
+                           </td>
                           <td className="p-4">
                             <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedUserForReport(user);
+                                  setShowUserReportModal(true);
+                                }}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Generate Report"
+                              >
+                                <FaFilePdf />
+                              </button>
                               <button
                                 onClick={() => deleteUser(user._id)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -720,8 +1031,8 @@ export default function AdminDashboard() {
                                 <FaTrash />
                               </button>
                             </div>
-                          </td>
-                        </tr>
+                           </td>
+                         </tr>
                       ))}
                     </tbody>
                   </table>
@@ -770,7 +1081,7 @@ export default function AdminDashboard() {
                         <th className="p-4 text-left">Priority</th>
                         <th className="p-4 text-left">Date</th>
                         <th className="p-4 text-left">Actions</th>
-                      </tr>
+                       </tr>
                     </thead>
                     <tbody>
                       {filteredComplaints.map(complaint => (
@@ -781,12 +1092,12 @@ export default function AdminDashboard() {
                               <p className="font-medium">{complaint.citizenName}</p>
                               <p className="text-xs text-gray-500">{complaint.contactNumber}</p>
                             </div>
-                          </td>
+                           </td>
                           <td className="p-4">{complaint.department}</td>
                           <td className="p-4">
                             <p className="font-medium">{complaint.issueKeyword}</p>
                             <p className="text-xs text-gray-500 truncate max-w-xs">{complaint.description?.substring(0, 50)}...</p>
-                          </td>
+                           </td>
                           <td className="p-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                               complaint.status === 'Resolved' ? 'bg-green-100 text-green-800' :
@@ -795,7 +1106,7 @@ export default function AdminDashboard() {
                             }`}>
                               {complaint.status}
                             </span>
-                          </td>
+                           </td>
                           <td className="p-4">
                             <span className={`px-2 py-1 rounded text-xs ${
                               complaint.priority === 'high' ? 'bg-red-100 text-red-800' :
@@ -804,23 +1115,33 @@ export default function AdminDashboard() {
                             }`}>
                               {complaint.priority}
                             </span>
-                          </td>
+                           </td>
                           <td className="p-4 text-sm">
                             {new Date(complaint.createdAt).toLocaleDateString()}
-                          </td>
+                           </td>
                           <td className="p-4">
+                            <button
+                              onClick={() => {
+                                setSelectedComplaintDetail(complaint);
+                                setShowComplaintDetail(true);
+                              }}
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                              title="View Full Details"
+                            >
+                              <FaEye />
+                            </button>
                             <button
                               onClick={() => {
                                 setSelectedComplaint(complaint);
                                 setShowComplaintModal(true);
                               }}
-                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                              title="Process Complaint"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Quick Status Update"
                             >
                               <FaEdit />
                             </button>
-                          </td>
-                        </tr>
+                           </td>
+                         </tr>
                       ))}
                     </tbody>
                   </table>
@@ -851,7 +1172,7 @@ export default function AdminDashboard() {
                         <th className="p-4 text-left">Uploaded</th>
                         <th className="p-4 text-left">Status</th>
                         <th className="p-4 text-left">Actions</th>
-                      </tr>
+                       </tr>
                     </thead>
                     <tbody>
                       {documents.map(doc => (
@@ -859,12 +1180,12 @@ export default function AdminDashboard() {
                           <td className="p-4">
                             <p className="font-medium">{doc.userId?.name}</p>
                             <p className="text-xs text-gray-500">{doc.userId?.email}</p>
-                          </td>
+                           </td>
                           <td className="p-4 capitalize">{doc.documentType}</td>
                           <td className="p-4 text-sm">{doc.fileName}</td>
                           <td className="p-4 text-sm">
                             {new Date(doc.uploadedAt).toLocaleDateString()}
-                          </td>
+                           </td>
                           <td className="p-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                               doc.status === 'Verified' ? 'bg-green-100 text-green-800' :
@@ -873,7 +1194,7 @@ export default function AdminDashboard() {
                             }`}>
                               {doc.status}
                             </span>
-                          </td>
+                           </td>
                           <td className="p-4">
                             <div className="flex gap-2">
                               <button
@@ -891,8 +1212,8 @@ export default function AdminDashboard() {
                                 <FaTimes />
                               </button>
                             </div>
-                          </td>
-                        </tr>
+                           </td>
+                         </tr>
                       ))}
                     </tbody>
                   </table>
@@ -914,7 +1235,6 @@ export default function AdminDashboard() {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Resolution Times */}
                   <div className="border rounded-lg p-4">
                     <h3 className="font-semibold mb-4">Set Resolution Times</h3>
                     <div className="space-y-3">
@@ -935,7 +1255,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* System Preferences */}
                   <div className="border rounded-lg p-4">
                     <h3 className="font-semibold mb-4">System Preferences</h3>
                     <div className="space-y-3">
@@ -958,17 +1277,180 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
+            {/* Reports Tab */}
+            {activeTab === "reports" && (
+              <div className="space-y-6">
+                {/* Date Range Selector */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                      <FaCalendarAlt className="text-purple-600" />
+                      Report Period
+                    </h3>
+                    <button
+                      onClick={() => setShowDatePicker(!showDatePicker)}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      {showDatePicker ? 'Hide' : 'Select Date Range'}
+                    </button>
+                  </div>
+                  {showDatePicker && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                        <input
+                          type="date"
+                          value={dateRange.start}
+                          onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                        <input
+                          type="date"
+                          value={dateRange.end}
+                          onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Report Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <FaChartBar className="text-blue-600 text-2xl" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">Service Usage Report</h3>
+                        <p className="text-sm text-gray-500">Service statistics and department analysis</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleGenerateServiceReport}
+                      disabled={generating}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {generating ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+                      Generate Report
+                    </button>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <FaUsers className="text-green-600 text-2xl" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">User Activity Report</h3>
+                        <p className="text-sm text-gray-500">User engagement and activity metrics</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleGenerateUserActivityReport}
+                      disabled={generating}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {generating ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+                      Generate Report
+                    </button>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <FaFilePdf className="text-purple-600 text-2xl" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">Comprehensive Report</h3>
+                        <p className="text-sm text-gray-500">Complete system overview and KPIs</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleGenerateCombinedReport}
+                      disabled={generating}
+                      className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {generating ? <FaSpinner className="animate-spin" /> : <FaDownload />}
+                      Generate Report
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Export Options */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <FaChartLine className="text-purple-600" />
+                    Quick Export Options
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Generate reports for specific time periods or export all data for analysis
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={() => {
+                        setDateRange({
+                          start: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Last 7 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateRange({
+                          start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Last 30 Days
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateRange({
+                          start: new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Last 3 Months
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDateRange({
+                          start: new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0],
+                          end: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Last Year
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
 
-      {/* Complaint Processing Modal */}
+      {/* Quick Status Update Modal */}
       {showComplaintModal && selectedComplaint && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-indigo-600 text-white sticky top-0">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold">Process Complaint</h3>
+                <h3 className="text-xl font-bold">Quick Status Update</h3>
                 <button
                   onClick={() => {
                     setShowComplaintModal(false);
@@ -1032,12 +1514,38 @@ export default function AdminDashboard() {
                   >
                     Mark Resolved
                   </button>
+                  <button
+                    onClick={() => {
+                      setShowComplaintModal(false);
+                      setSelectedComplaintDetail(selectedComplaint);
+                      setShowComplaintDetail(true);
+                    }}
+                    className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  >
+                    View Full Details
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

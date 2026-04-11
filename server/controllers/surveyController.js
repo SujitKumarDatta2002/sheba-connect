@@ -8,6 +8,31 @@ const submitSurvey = async (req, res) => {
   try {
     const { complaintId, issueDate, resolveDate, feedback, solution, satisfaction, helpful } = req.body;
     
+    // Validate required fields
+    if (!complaintId || !issueDate || !resolveDate || !feedback || !solution) {
+      return res.status(400).json({ 
+        message: "Missing required fields",
+        required: { complaintId, issueDate, resolveDate, feedback: !!feedback, solution: !!solution }
+      });
+    }
+
+    // Validate satisfaction rating
+    if (!satisfaction || satisfaction < 1 || satisfaction > 5) {
+      return res.status(400).json({ message: "Satisfaction rating must be between 1 and 5" });
+    }
+
+    // Validate dates
+    const start = new Date(issueDate);
+    const end = new Date(resolveDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+
+    if (end < start) {
+      return res.status(400).json({ message: "Resolution date must be after issue date" });
+    }
+    
     // Check if complaint exists and belongs to user
     const complaint = await Complaint.findOne({
       _id: complaintId,
@@ -24,9 +49,12 @@ const submitSurvey = async (req, res) => {
       return res.status(400).json({ message: "Survey already submitted for this complaint" });
     }
 
+    // Validate complaint has required fields
+    if (!complaint.department || !complaint.issueKeyword) {
+      return res.status(400).json({ message: "Complaint missing required information" });
+    }
+
     // Calculate resolution time in days
-    const start = new Date(issueDate);
-    const end = new Date(resolveDate);
     const resolutionTime = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
     // Generate tags from issue keyword
@@ -40,13 +68,13 @@ const submitSurvey = async (req, res) => {
       userId: req.user.userId,
       department: complaint.department,
       issueKeyword: complaint.issueKeyword,
-      issueDate,
-      resolveDate,
+      issueDate: start,
+      resolveDate: end,
       resolutionTime,
-      feedback,
-      solution,
-      satisfaction,
-      helpful,
+      feedback: feedback.trim(),
+      solution: solution.trim(),
+      satisfaction: parseInt(satisfaction),
+      helpful: helpful === true || helpful === 'true',
       tags
     });
 

@@ -35,11 +35,24 @@ export default function SurveyModal({ complaint, onClose, onSubmit }) {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Validate all required fields
+      if (!formData.issueDate || !formData.resolveDate || !formData.feedback.trim() || !formData.solution.trim()) {
+        setError('Please fill in all required fields');
+        setLoading(false);
+        return;
+      }
+
       await axios.post(
         "http://localhost:5000/api/surveys/submit",
         {
           complaintId: complaint._id,
-          ...formData
+          issueDate: formData.issueDate,
+          resolveDate: formData.resolveDate,
+          feedback: formData.feedback,
+          solution: formData.solution,
+          satisfaction: parseInt(formData.satisfaction),
+          helpful: formData.helpful === true
         },
         {
           headers: { Authorization: `Bearer ${token}` }
