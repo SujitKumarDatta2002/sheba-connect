@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +14,7 @@ import {
   FaIdCard, FaMapMarkerAlt, FaChartLine
 } from "react-icons/fa";
 import AdminSolutions from "../components/AdminSolutions";
+import AdminComplaintDetail from "../components/AdminComplaintDetail";
 
 // PDF.co API Key
 const PDF_CO_API_KEY = 'muntaka.mubarrat.antorik@g.bracu.ac.bd_7bOKLjoVdjQc8cu8UleHOGAgQWssCk2bsFRUNI9hfk6EirfxdfG6zcWxSwkEM57p';
@@ -51,6 +51,8 @@ export default function AdminDashboard() {
   const [selectedUserForReport, setSelectedUserForReport] = useState(null);
   const [showUserReportModal, setShowUserReportModal] = useState(false);
   const [reportFormat, setReportFormat] = useState("detailed");
+  const [selectedComplaintDetail, setSelectedComplaintDetail] = useState(null);
+  const [showComplaintDetail, setShowComplaintDetail] = useState(false);
 
   // Helper function to generate PDF using PDF.co API
   const generatePDF = async (html, filename) => {
@@ -87,12 +89,10 @@ export default function AdminDashboard() {
   const generateUserWiseReport = async (user) => {
     setGenerating(true);
     try {
-      // Get user's complaints from the existing complaints array
       const userComplaints = complaints.filter(c => 
         c.userId === user._id || c.userId?._id === user._id || c.email === user.email
       );
 
-      // Build HTML for PDF
       const html = `
         <!DOCTYPE html>
         <html>
@@ -183,7 +183,6 @@ export default function AdminDashboard() {
   const generateAllUsersReport = async () => {
     setGenerating(true);
     try {
-      // Build HTML for PDF
       const html = `
         <!DOCTYPE html>
         <html>
@@ -730,6 +729,21 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Admin Complaint Detail Modal */}
+      {showComplaintDetail && selectedComplaintDetail && (
+        <AdminComplaintDetail
+          complaint={selectedComplaintDetail}
+          onClose={() => {
+            setShowComplaintDetail(false);
+            setSelectedComplaintDetail(null);
+          }}
+          onUpdate={() => {
+            fetchDashboardData();
+          }}
+          showNotification={showNotification}
+        />
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-700 to-indigo-800 text-white py-8 px-6 shadow-lg">
         <div className="container mx-auto">
@@ -1108,11 +1122,21 @@ export default function AdminDashboard() {
                           <td className="p-4">
                             <button
                               onClick={() => {
+                                setSelectedComplaintDetail(complaint);
+                                setShowComplaintDetail(true);
+                              }}
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                              title="View Full Details"
+                            >
+                              <FaEye />
+                            </button>
+                            <button
+                              onClick={() => {
                                 setSelectedComplaint(complaint);
                                 setShowComplaintModal(true);
                               }}
-                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                              title="Process Complaint"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Quick Status Update"
                             >
                               <FaEdit />
                             </button>
@@ -1420,13 +1444,13 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Complaint Processing Modal */}
+      {/* Quick Status Update Modal */}
       {showComplaintModal && selectedComplaint && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-indigo-600 text-white sticky top-0">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold">Process Complaint</h3>
+                <h3 className="text-xl font-bold">Quick Status Update</h3>
                 <button
                   onClick={() => {
                     setShowComplaintModal(false);
@@ -1490,6 +1514,16 @@ export default function AdminDashboard() {
                   >
                     Mark Resolved
                   </button>
+                  <button
+                    onClick={() => {
+                      setShowComplaintModal(false);
+                      setSelectedComplaintDetail(selectedComplaint);
+                      setShowComplaintDetail(true);
+                    }}
+                    className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  >
+                    View Full Details
+                  </button>
                 </div>
               </div>
             </div>
@@ -1497,13 +1531,21 @@ export default function AdminDashboard() {
         </div>
       )}
 
-<style>{`
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-slideDown { animation: slideDown 0.3s ease-out; }
-`}</style>
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

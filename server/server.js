@@ -109,6 +109,7 @@ require("./models/Complaint");
 require("./models/UserDocument");
 require("./models/Survey");  // <-- ADD THIS LINE
 require("./models/Solution");
+require("./models/Appointment");  // <-- ADD THIS LINE
 
 const app = express();
 
