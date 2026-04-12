@@ -412,6 +412,36 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// GET appointments linked to a complaint
+router.get('/:id/appointments', authMiddleware, async (req, res) => {
+  try {
+    const Appointment = require('../models/Appointment');
+    const complaint = await Complaint.findById(req.params.id).select('userId');
+
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isOwner = complaint.userId.toString() === req.user.userId;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ message: 'Unauthorized to view complaint appointments' });
+    }
+
+    const appointments = await Appointment.find({ complaintId: req.params.id })
+      .populate('adminId', 'name email phone')
+      .populate('userId', 'name email phone')
+      .populate('complaintId', 'complaintNumber description status')
+      .sort({ appointmentDate: -1, createdAt: -1 });
+
+    res.json(appointments);
+  } catch (error) {
+    console.error('Error fetching complaint appointments:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // CREATE a new complaint
 router.post('/create', authMiddleware, async (req, res) => {
   try {

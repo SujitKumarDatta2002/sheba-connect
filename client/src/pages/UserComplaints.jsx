@@ -10,7 +10,9 @@ import {
 
 export default function Complaints() {
   const [complaints, setComplaints] = useState([]);
+  const [complaintAppointments, setComplaintAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
@@ -55,6 +57,33 @@ export default function Complaints() {
     }
   };
 
+  const fetchComplaintAppointments = async (complaintId) => {
+    setAppointmentsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(
+        `http://localhost:5000/api/complaints/${complaintId}/appointments`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setComplaintAppointments(res.data);
+    } catch (err) {
+      console.error("Error fetching complaint appointments:", err);
+      setComplaintAppointments([]);
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setSelectedComplaint(null);
+    setEditForm({
+      description: "",
+      formalTemplate: "",
+      editReason: ""
+    });
+  };
+
   const getFilteredComplaints = () => {
     return complaints.filter(complaint => {
       const matchesSearch = complaint.complaintNumber?.includes(searchTerm) ||
@@ -81,7 +110,7 @@ export default function Complaints() {
       );
 
       showNotification("Complaint updated successfully", "success");
-      setShowEditModal(false);
+      closeEditModal();
       fetchComplaints();
     } catch (err) {
       console.error("Error editing complaint:", err);
@@ -129,6 +158,7 @@ export default function Complaints() {
   const openDetailModal = (complaint) => {
     setSelectedComplaint(complaint);
     setShowDetailModal(true);
+    fetchComplaintAppointments(complaint._id);
   };
 
   // Status Badge Component
@@ -299,6 +329,52 @@ export default function Complaints() {
               </div>
             )}
 
+            <div>
+              <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <FaCalendarAlt /> Related Appointments
+              </p>
+              {appointmentsLoading ? (
+                <div className="bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-500">
+                  Loading appointment details...
+                </div>
+              ) : complaintAppointments.length > 0 ? (
+                <div className="space-y-3">
+                  {complaintAppointments.map((appointment) => (
+                    <div key={appointment._id} className="bg-blue-50 p-4 rounded border border-blue-200">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs font-bold text-blue-900">Appointment Date</p>
+                          <p className="text-sm text-gray-900">
+                            {new Date(appointment.appointmentDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-blue-900">Appointment Time</p>
+                          <p className="text-sm text-gray-900">{appointment.appointmentTime}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-blue-900">Location</p>
+                          <p className="text-sm text-gray-900">{appointment.location}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-blue-900">Status</p>
+                          <p className="text-sm text-gray-900">{appointment.status}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs font-bold text-blue-900">Purpose</p>
+                          <p className="text-sm text-gray-900">{appointment.purpose || 'Not provided'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-500">
+                  No appointment has been linked to this complaint yet.
+                </div>
+              )}
+            </div>
+
             {/* Admin Feedback */}
             {selectedComplaint.adminFeedback && selectedComplaint.adminFeedback.length > 0 && (
               <div>
@@ -363,7 +439,7 @@ export default function Complaints() {
               <FaEdit /> Edit Complaint
             </h2>
             <button
-              onClick={() => setShowEditModal(false)}
+              onClick={closeEditModal}
               className="text-white hover:bg-green-800 p-2 rounded transition"
             >
               <FaTimes size={24} />
@@ -425,7 +501,7 @@ export default function Complaints() {
             <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
               <button
                 type="button"
-                onClick={() => setShowEditModal(false)}
+                onClick={closeEditModal}
                 className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-900 rounded-lg hover:bg-gray-50 transition font-medium"
               >
                 Cancel

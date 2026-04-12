@@ -10,6 +10,7 @@ import {
 
 export default function AdminComplaintDetail({ complaint, onClose, onUpdate, showNotification }) {
   const [complaintData, setComplaintData] = useState(complaint);
+  const [appointments, setAppointments] = useState([]);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isQuestion, setIsQuestion] = useState(false);
   const [requiresResponse, setRequiresResponse] = useState(false);
@@ -18,6 +19,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
   const [adminResponse, setAdminResponse] = useState("");
   const [activeSection, setActiveSection] = useState("details");
   const [loading, setLoading] = useState(false);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [selectedEdit, setSelectedEdit] = useState(null);
   const [appointmentDate, setAppointmentDate] = useState("");
@@ -28,6 +30,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
 
   useEffect(() => {
     fetchComplaintDetails();
+    fetchAppointments();
   }, [complaint._id]);
 
   const fetchComplaintDetails = async () => {
@@ -43,6 +46,22 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
       console.error("Error fetching complaint details:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAppointments = async () => {
+    setAppointmentsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(
+        `http://localhost:5000/api/admin/complaints/${complaint._id}/appointments`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAppointments(res.data);
+    } catch (err) {
+      console.error("Error fetching complaint appointments:", err);
+    } finally {
+      setAppointmentsLoading(false);
     }
   };
 
@@ -199,6 +218,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
       setAppointmentLocation("");
       setAppointmentPurpose("");
       await fetchComplaintDetails();
+      await fetchAppointments();
     } catch (err) {
       console.error("Error scheduling appointment:", err);
       const errorMsg = err.response?.data?.message || "Failed to schedule appointment. Please try again.";
@@ -244,6 +264,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
   }
 
   const unreviewedEdits = complaintData.editHistory?.filter(e => !e.reviewedByAdmin) || [];
+  const formatAppointmentDate = (date) => new Date(date).toLocaleDateString();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -648,11 +669,58 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
           {activeSection === "appointment" && (
             <div className="space-y-6">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <FaCalendarAlt /> Schedule Appointment
+                <FaCalendarAlt /> Appointment Management
               </h3>
 
-              {/* Appointment Form */}
+              <div className="bg-white border rounded-lg p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-900">Scheduled Appointments</h4>
+                  <span className="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {appointments.length} total
+                  </span>
+                </div>
+
+                {appointmentsLoading ? (
+                  <div className="py-6 text-center text-gray-500">
+                    <FaSpinner className="animate-spin mx-auto mb-2" />
+                    Loading appointments...
+                  </div>
+                ) : appointments.length > 0 ? (
+                  <div className="space-y-3">
+                    {appointments.map((item) => (
+                      <div key={item._id} className="border rounded-lg p-4 bg-blue-50/40">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                          <p className="font-medium text-gray-900">
+                            {formatAppointmentDate(item.appointmentDate)} at {item.appointmentTime}
+                          </p>
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-white border text-gray-700">
+                            {item.status}
+                          </span>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-500">Location</p>
+                            <p className="font-medium text-gray-900">{item.location}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Citizen Response</p>
+                            <p className="font-medium text-gray-900">{item.userResponse?.status || "Pending response"}</p>
+                          </div>
+                          <div className="md:col-span-2">
+                            <p className="text-gray-500">Purpose</p>
+                            <p className="font-medium text-gray-900">{item.purpose || "Not provided"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No appointment has been scheduled for this complaint yet.</p>
+                )}
+              </div>
+
               <div className="bg-gray-50 p-6 rounded-lg border">
+                <h4 className="font-medium text-gray-900 mb-4">Schedule New Appointment</h4>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -724,10 +792,9 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
                 </div>
               </div>
 
-              {/* Citizen Information for Appointment */}
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
-                  <FaUser /> Citizen Details
+                  <FaUser /> Citizen Details For Appointment
                 </h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>

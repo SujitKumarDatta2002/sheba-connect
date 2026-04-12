@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   // Modals
   const [showComplaintDetail, setShowComplaintDetail] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [loadingComplaintDetail, setLoadingComplaintDetail] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   
@@ -97,9 +98,22 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleComplaintClick = (complaint) => {
-    setSelectedComplaint(complaint);
-    setShowComplaintDetail(true);
+  const handleComplaintClick = async (complaint) => {
+    setLoadingComplaintDetail(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(
+        `http://localhost:5000/api/admin/complaints/${complaint._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSelectedComplaint(res.data);
+      setShowComplaintDetail(true);
+    } catch (err) {
+      console.error("Error fetching complaint detail:", err);
+      showNotification("Failed to load complaint details", "error");
+    } finally {
+      setLoadingComplaintDetail(false);
+    }
   };
 
   const updateComplaintStatus = async (complaintId, newStatus) => {
@@ -390,6 +404,14 @@ export default function AdminDashboard() {
       }
     };
 
+    const relatedAppointments = appointments.filter((appointment) => {
+      const appointmentComplaintId =
+        typeof appointment.complaintId === "string"
+          ? appointment.complaintId
+          : appointment.complaintId?._id;
+      return appointmentComplaintId === selectedComplaint._id;
+    });
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-96 overflow-auto">
@@ -438,6 +460,44 @@ export default function AdminDashboard() {
                   <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded mt-1">
                     {selectedComplaint.formalTemplate || 'Not provided'}
                   </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold text-gray-600 flex items-center gap-2 mb-2">
+                    <FaCalendarAlt /> Related Appointments
+                  </p>
+                  {relatedAppointments.length > 0 ? (
+                    <div className="space-y-3">
+                      {relatedAppointments.map((appointment) => (
+                        <div key={appointment._id} className="bg-blue-50 p-3 rounded border border-blue-200">
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-xs font-bold text-blue-900">Appointment Date</p>
+                              <p className="text-gray-900">{new Date(appointment.appointmentDate).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-blue-900">Appointment Time</p>
+                              <p className="text-gray-900">{appointment.appointmentTime}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-blue-900">Location</p>
+                              <p className="text-gray-900">{appointment.location}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-blue-900">Status</p>
+                              <p className="text-gray-900">{appointment.status}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p className="text-xs font-bold text-blue-900">Purpose</p>
+                              <p className="text-gray-900">{appointment.purpose || 'Not provided'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded">No appointment linked to this complaint yet.</p>
+                  )}
                 </div>
 
                 {/* Edit History Section */}
@@ -558,6 +618,12 @@ export default function AdminDashboard() {
           notification.type === 'error' ? 'bg-red-500' : 'bg-green-500'
         }`}>
           {notification.message}
+        </div>
+      )}
+
+      {loadingComplaintDetail && (
+        <div className="mx-4 mt-4 p-4 rounded-lg bg-blue-50 text-blue-800">
+          Loading complaint details...
         </div>
       )}
 

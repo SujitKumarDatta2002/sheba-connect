@@ -874,6 +874,22 @@ router.get('/complaints/:id', async (req, res) => {
   }
 });
 
+// Get appointments for a specific complaint
+router.get('/complaints/:id/appointments', async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ complaintId: req.params.id })
+      .populate('userId', 'name email phone')
+      .populate('adminId', 'name email')
+      .populate('complaintId', 'complaintNumber description status')
+      .sort({ appointmentDate: -1, createdAt: -1 });
+
+    res.json(appointments);
+  } catch (error) {
+    console.error('Error fetching complaint appointments:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Update complaint status
 router.put('/complaints/:id/status', async (req, res) => {
   try {
