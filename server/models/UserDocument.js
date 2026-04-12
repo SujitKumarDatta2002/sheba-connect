@@ -1,118 +1,22 @@
 
 
-// // const mongoose = require("mongoose");
-
-// // const UserDocumentSchema = new mongoose.Schema({
-// //   userId: {
-// //     type: mongoose.Schema.Types.ObjectId,
-// //     ref: "User"
-// //   },
-
-// //   documentType: {
-// //     type: String,
-// //     required: true
-// //   },
-
-// //   filePath: {
-// //     type: String,
-// //     required: true
-// //   },
-
-// //   status: {
-// //     type: String,
-// //     enum: ["Pending", "Verified", "Rejected"],
-// //     default: "Pending"
-// //   },
-
-// //   createdAt: {
-// //     type: Date,
-// //     default: Date.now
-// //   }
-
-// // });
-
-// // module.exports = mongoose.model("UserDocument", UserDocumentSchema);
-
-
-
-// const mongoose = require("mongoose");
-
-// const UserDocumentSchema = new mongoose.Schema({
-//   userId: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: "User",
-//     required: true  // Make userId required
-//   },
-
-//   documentType: {
-//   type: String,
-//   required: true,
-//   enum: ["passport", "nid", "birthCertificate", "tin", "drivingLicense", "citizenship", "educationalCertificate"]
-//   },
-  
-//   fileName: {
-//     type: String,
-//     required: true  // Store original filename
-//   },
-
-//   filePath: {
-//     type: String,
-//     required: true
-//   },
-
-//   fileSize: {
-//     type: Number,
-//     required: true  // Store file size for display
-//   },
-
-//   status: {
-//     type: String,
-//     enum: ["Pending", "Verified", "Rejected"],
-//     default: "Pending"
-//   },
-
-//   uploadedAt: {
-//     type: Date,
-//     default: Date.now
-//   }
-
-// }, { timestamps: true }); // Add timestamps for createdAt/updatedAt
-
-// // Ensure one document per type per user
-// UserDocumentSchema.index({ userId: 1, documentType: 1 }, { unique: true });
-
-// module.exports = mongoose.model("UserDocument", UserDocumentSchema);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * models/UserDocument.js
- *
- * Replaces the old `filePath` (local disk) with `gridFSFileId` (MongoDB GridFS).
- * This makes files accessible from any device / server instance.
- */
+// models/UserDocument.js
+// Stores metadata for each document a user uploads.
+// The actual file binary lives in MongoDB GridFS (uploads.files / uploads.chunks).
+// gridFSFileId is the link between this record and the file in GridFS.
 
 const mongoose = require('mongoose');
 
 const userDocumentSchema = new mongoose.Schema(
   {
+    // Reference to the user who owns this document
     userId: {
       type:     mongoose.Schema.Types.ObjectId,
       ref:      'User',
       required: true,
     },
+
+    // Type of government document (must match one of the allowed values)
     documentType: {
       type:     String,
       required: true,
@@ -126,23 +30,32 @@ const userDocumentSchema = new mongoose.Schema(
         'educationalCertificate',
       ],
     },
+
+    // Original filename as uploaded by the user
     fileName: {
       type:     String,
       required: true,
     },
+
+    // File size in bytes
     fileSize: {
       type: Number,
     },
-    // GridFS ObjectId — replaces the old local `filePath`
+
+    // ObjectId pointing to the file stored in GridFS (uploads.files collection)
+    // This replaces the old local filePath field
     gridFSFileId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type:     mongoose.Schema.Types.ObjectId,
       required: true,
     },
+
+    // Admin verification status
     status: {
       type:    String,
       enum:    ['Pending', 'Verified', 'Rejected'],
       default: 'Pending',
     },
+
     uploadedAt: {
       type:    Date,
       default: Date.now,
@@ -151,7 +64,7 @@ const userDocumentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// One document type per user
+// Enforce one document per type per user
 userDocumentSchema.index({ userId: 1, documentType: 1 }, { unique: true });
 
 module.exports = mongoose.model('UserDocument', userDocumentSchema);

@@ -1,29 +1,48 @@
 
+
+// controllers/helplineController.js
+// Handles all helpline-related operations.
+// Public: read. Admin only: create, update, delete.
+
 const Helpline = require('../models/Helpline');
 
-// Get all helplines, optionally filter by category
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/helplines
+// Returns all helplines. Supports optional ?category= and ?search= filters.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.getHelplines = async (req, res) => {
   try {
     const { category, search } = req.query;
 
-    let filter = {};
-    if (category) filter.category = category;
+    const filter = {};
+
+    if (category) {
+      filter.category = category;
+    }
+
     if (search) {
+      // Case-insensitive search across name and description
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { name:        { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
       ];
     }
 
-    const helplines = await Helpline.find(filter).sort({ isEmergency: -1, category: 1, name: 1 });
+    // Sort: emergency entries first, then by category, then alphabetically
+    const helplines = await Helpline.find(filter)
+      .sort({ isEmergency: -1, category: 1, name: 1 });
+
     res.json(helplines);
-  } catch (error) {
-    console.error('Get helplines error:', error);
+  } catch (err) {
+    console.error('getHelplines error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Admin: Create helpline
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/helplines  (Admin only)
+// Creates a new helpline entry.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.createHelpline = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -33,13 +52,16 @@ exports.createHelpline = async (req, res) => {
     const helpline = new Helpline(req.body);
     await helpline.save();
     res.status(201).json(helpline);
-  } catch (error) {
-    console.error('Create helpline error:', error);
+  } catch (err) {
+    console.error('createHelpline error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Admin: Update helpline
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/helplines/:id  (Admin only)
+// Updates an existing helpline by ID.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.updateHelpline = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -51,17 +73,22 @@ exports.updateHelpline = async (req, res) => {
       req.body,
       { new: true, runValidators: true }
     );
+
     if (!helpline) {
       return res.status(404).json({ message: 'Helpline not found' });
     }
+
     res.json(helpline);
-  } catch (error) {
-    console.error('Update helpline error:', error);
+  } catch (err) {
+    console.error('updateHelpline error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Admin: Delete helpline
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/helplines/:id  (Admin only)
+// Permanently removes a helpline.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.deleteHelpline = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -69,13 +96,14 @@ exports.deleteHelpline = async (req, res) => {
     }
 
     const helpline = await Helpline.findByIdAndDelete(req.params.id);
+
     if (!helpline) {
       return res.status(404).json({ message: 'Helpline not found' });
     }
+
     res.json({ message: 'Helpline deleted successfully' });
-  } catch (error) {
-    console.error('Delete helpline error:', error);
+  } catch (err) {
+    console.error('deleteHelpline error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
-

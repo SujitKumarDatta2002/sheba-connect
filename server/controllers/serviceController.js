@@ -1,69 +1,93 @@
 
+
+// controllers/serviceController.js
+// Handles all government service operations.
+// Public: read with filtering. Admin only: create, update, soft-delete.
+
 const Service = require('../models/Service');
 
-// Get all services with filtering
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/services
+// Returns all active services. Supports multiple query filters:
+//   ?department=   ?urgency=   ?minCost=   ?maxCost=
+//   ?processingTime=   ?requiredDocuments=nid,passport   ?search=
+// ─────────────────────────────────────────────────────────────────────────────
 exports.getServices = async (req, res) => {
   try {
     const {
-      department,
-      urgency,
-      minCost,
-      maxCost,
-      processingTime,
-      requiredDocuments,
-      search
+      department, urgency, minCost, maxCost,
+      processingTime, requiredDocuments, search,
     } = req.query;
 
-    let filter = { isActive: true };
+    // Only return active services by default
+    const filter = { isActive: true };
 
-    if (department) filter.department = department;
-    if (urgency) filter.urgency = urgency;
+    if (department) {
+      filter.department = department;
+    }
+
+    if (urgency) {
+      filter.urgency = urgency;
+    }
+
+    // Cost range — build the $gte / $lte object only when at least one bound is provided
     if (minCost || maxCost) {
       filter.cost = {};
       if (minCost) filter.cost.$gte = Number(minCost);
       if (maxCost) filter.cost.$lte = Number(maxCost);
     }
+
+    // processingTime is stored as a string (e.g. "3-5 days"), so we use a regex match
     if (processingTime) {
-      // Simple text match – for demo; in production you might store days as number
       filter.processingTime = { $regex: processingTime, $options: 'i' };
     }
+
+    // requiredDocuments comes as a comma-separated string; match services that require ALL of them
     if (requiredDocuments) {
-      const docs = requiredDocuments.split(',');
-      filter.requiredDocuments = { $all: docs };
+      filter.requiredDocuments = { $all: requiredDocuments.split(',') };
     }
+
+    // Full-text search across service name and description
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { name:        { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
       ];
     }
 
     const services = await Service.find(filter).sort({ name: 1 });
     res.json(services);
-  } catch (error) {
-    console.error('Get services error:', error);
+  } catch (err) {
+    console.error('getServices error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Get single service by ID
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/services/:id
+// Returns a single service by its MongoDB ID.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.getServiceById = async (req, res) => {
   try {
     const service = await Service.findById(req.params.id);
+
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
     }
+
     res.json(service);
-  } catch (error) {
-    console.error('Get service error:', error);
+  } catch (err) {
+    console.error('getServiceById error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Admin: Create new service
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/services  (Admin only)
+// Creates a new service entry.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.createService = async (req, res) => {
   try {
-    // Check admin role (you can add middleware)
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
@@ -71,13 +95,16 @@ exports.createService = async (req, res) => {
     const service = new Service(req.body);
     await service.save();
     res.status(201).json(service);
-  } catch (error) {
-    console.error('Create service error:', error);
+  } catch (err) {
+    console.error('createService error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Admin: Update service
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/services/:id  (Admin only)
+// Updates an existing service by ID.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.updateService = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -89,17 +116,24 @@ exports.updateService = async (req, res) => {
       req.body,
       { new: true, runValidators: true }
     );
+
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
     }
+
     res.json(service);
-  } catch (error) {
-    console.error('Update service error:', error);
+  } catch (err) {
+    console.error('updateService error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Admin: Delete service (soft delete by setting isActive false)
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/services/:id  (Admin only)
+// Soft-deletes by setting isActive = false.
+// The record stays in MongoDB but won't appear in public listings.
+// Use this instead of hard-deleting so historical data is preserved.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.deleteService = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -111,13 +145,14 @@ exports.deleteService = async (req, res) => {
       { isActive: false },
       { new: true }
     );
+
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
     }
+
     res.json({ message: 'Service deactivated successfully' });
-  } catch (error) {
-    console.error('Delete service error:', error);
+  } catch (err) {
+    console.error('deleteService error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
-
