@@ -2,9 +2,7 @@ import { Link } from "react-router-dom";
 import { FaHome, FaClipboardList, FaCogs, FaFileAlt } from "react-icons/fa";
 
 export default function Sidebar() {
-
   return (
-
     <aside className="bg-blue-900 text-white w-64 min-h-screen p-6">
 
       <h2 className="text-xl font-bold mb-10">

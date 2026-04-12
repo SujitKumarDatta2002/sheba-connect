@@ -325,6 +325,7 @@ export default function Navbar({ user, setUser }) {
     { name: "Complaints", path: "/complaints", icon: <FaClipboardList /> },
     { name: "Services", path: "/services", icon: <FaCogs /> },
     { name: "Documents", path: "/documents", icon: <FaFileAlt /> },
+    { name: "Analytics", path: "/service-analytics", icon: <FaChartBar /> },
   ];
 
   // Navigation items for admin users
@@ -336,6 +337,7 @@ export default function Navbar({ user, setUser }) {
     { name: "Applications", path: "/admin/applications", icon: <FaClipboardCheck /> },
     { name: "Solutions", path: "/admin/solutions", icon: <FaLightbulb /> },
     { name: "Helplines", path: "/admin/helplines", icon: <FaPhone /> },
+    { name: "Analytics", path: "/admin/service-analytics", icon: <FaChartBar /> },
   ];
 
   // Determine which navigation to show
