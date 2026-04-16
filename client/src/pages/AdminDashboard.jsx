@@ -44,8 +44,8 @@ export default function AdminDashboard() {
   const [adminComment, setAdminComment] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: "", // Remove default 30-day limit
+    end: "" // Show all complaints by default
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [generating, setGenerating] = useState(false);

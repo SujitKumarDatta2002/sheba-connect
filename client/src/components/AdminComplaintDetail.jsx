@@ -50,22 +50,80 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
     }
   };
 
-  const fetchAppointments = async () => {
-    setAppointmentsLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(
-        `http://localhost:5000/api/admin/complaints/${complaint._id}/appointments`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setAppointments(res.data);
-    } catch (err) {
-      console.error("Error fetching complaint appointments:", err);
-    } finally {
-      setAppointmentsLoading(false);
-    }
-  };
+  // const fetchAppointments = async () => {
+  //   setAppointmentsLoading(true);
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     const res = await axios.get(
+  //       `${API}/api/admin/complaints/${complaint._id}/appointments`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     setAppointments(res.data);
+  //   } catch (err) {
+  //     console.error("Error fetching complaint appointments:", err);
+  //     // If the endpoint doesn't exist (404) or fails, try the alternative endpoint
+  //     if (err.response?.status === 404) {
+  //       try {
+  //         const token = localStorage.getItem('token');
+  //         const res = await axios.get(
+  //           `${API}/api/complaints/${complaint._id}/appointments`,
+  //           { headers: { Authorization: `Bearer ${token}` } }
+  //         );
+  //         setAppointments(res.data);
+  //       } catch (fallbackErr) {
+  //         console.error("Error fetching appointments from fallback endpoint:", fallbackErr);
+  //         setAppointments([]);
+  //       }
+  //     } else {
+  //       setAppointments([]);
+  //     }
+  //   } finally {
+  //     setAppointmentsLoading(false);
+  //   }
+  // };
+const fetchAppointments = async () => {
+  // Only fetch if user is admin
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (user.role !== 'admin') {
+    console.log('Not admin, skipping appointments fetch');
+    setAppointments([]);
+    setAppointmentsLoading(false);
+    return;
+  }
 
+  setAppointmentsLoading(true);
+  try {
+    const token = localStorage.getItem('token');
+    
+    // Verify token exists
+    if (!token) {
+      console.error('No token found');
+      setAppointments([]);
+      return;
+    }
+
+    console.log('Fetching appointments for complaint:', complaint._id);
+    
+    const response = await axios.get(
+      `${API}/api/admin/complaints/${complaint._id}/appointments`,
+      { 
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
+    
+    setAppointments(response.data);
+  } catch (err) {
+    console.error("Error fetching appointments:", err);
+    console.error("Status:", err.response?.status);
+    console.error("Message:", err.response?.data?.message);
+    setAppointments([]);
+  } finally {
+    setAppointmentsLoading(false);
+  }
+};
   const updateStatus = async (newStatus) => {
     setUpdatingStatus(true);
     try {
@@ -452,7 +510,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
           )}
 
           {/* Edit History Section */}
-          {activeSection === "edits" && (
+          {/* {activeSection === "edits" && (
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <FaHistory /> Edit History
@@ -546,8 +604,97 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
                 <p className="text-gray-500 text-center py-8">No edits have been made to this complaint.</p>
               )}
             </div>
-          )}
-
+          )} */}
+{/* Edit History Section */}
+{activeSection === "edits" && (
+  <div className="space-y-4">
+    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+      <FaHistory /> Edit History
+    </h3>
+    
+    {complaintData.editHistory && complaintData.editHistory.length > 0 ? (
+      <div className="space-y-4">
+        {complaintData.editHistory.map((edit, idx) => (
+          <div 
+            key={idx} 
+            className={`p-4 rounded-lg border ${
+              !edit.reviewedByAdmin ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200 bg-gray-50'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Edited on {new Date(edit.editedAt).toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Status at edit: {edit.statusAtEdit}
+                </p>
+              </div>
+              {!edit.reviewedByAdmin && (
+                <span className="bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                  Pending Review
+                </span>
+              )}
+              {edit.reviewedByAdmin && (
+                <span className="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <FaCheckCircle size={10} /> Reviewed
+                </span>
+              )}
+            </div>
+            
+            <p className="text-sm text-gray-700 mb-3">
+              <span className="font-medium">Reason:</span> {edit.editReason || 'Not specified'}
+            </p>
+            
+            {edit.previousDescription && edit.newDescription && (
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div className="bg-red-50 p-3 rounded border border-red-200">
+                  <p className="text-xs font-bold text-red-700 mb-2">Previous Description:</p>
+                  <p className="text-sm text-gray-700">{edit.previousDescription}</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded border border-green-200">
+                  <p className="text-xs font-bold text-green-700 mb-2">New Description:</p>
+                  <p className="text-sm text-gray-700">{edit.newDescription}</p>
+                </div>
+              </div>
+            )}
+            
+            {edit.previousTemplate && edit.newTemplate && (
+              <div className="mt-3">
+                <details className="bg-gray-100 rounded">
+                  <summary className="p-2 cursor-pointer text-sm font-medium">
+                    View Template Changes
+                  </summary>
+                  <div className="p-3 space-y-2">
+                    <div className="bg-red-50 p-2 rounded">
+                      <p className="text-xs font-bold text-red-700 mb-1">Previous Template:</p>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap">{edit.previousTemplate?.substring(0, 300)}...</pre>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded">
+                      <p className="text-xs font-bold text-green-700 mb-1">New Template:</p>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap">{edit.newTemplate?.substring(0, 300)}...</pre>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            )}
+            
+            {!edit.reviewedByAdmin && (
+              <button
+                onClick={() => markEditAsReviewed(edit._id)}
+                className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition flex items-center gap-2"
+              >
+                <FaCheck /> Mark as Reviewed
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-gray-500 text-center py-8">No edit history available</p>
+    )}
+  </div>
+)}
           {/* Communication Section */}
           {activeSection === "communication" && (
             <div className="space-y-6">

@@ -6,14 +6,17 @@ import {
   FaComment, FaCheckCircle, FaClock, FaExclamationTriangle,
   FaSpinner, FaCalendarAlt, FaTextHeight, FaReply, FaTimes,
   FaTimesCircle, FaChevronDown, FaUser, FaBell, FaArrowRight,
-  FaEye
+  FaEye, FaMapMarkerAlt
 } from "react-icons/fa";
 
 export default function Complaints() {
   const [complaints, setComplaints] = useState([]);
   const [complaintAppointments, setComplaintAppointments] = useState([]);
+  const [userAppointments, setUserAppointments] = useState([]);
+  const [activeTab, setActiveTab] = useState("complaints");
   const [loading, setLoading] = useState(true);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [userAppointmentsLoading, setUserAppointmentsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
@@ -35,7 +38,10 @@ export default function Complaints() {
 
   useEffect(() => {
     fetchComplaints();
-  }, []);
+    if (activeTab === "appointments") {
+      fetchUserAppointments();
+    }
+  }, [activeTab]);
 
   const showNotification = (message, type) => {
     setNotification({ show: true, message, type });
@@ -72,6 +78,23 @@ export default function Complaints() {
       setComplaintAppointments([]);
     } finally {
       setAppointmentsLoading(false);
+    }
+  };
+
+  const fetchUserAppointments = async () => {
+    setUserAppointmentsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(
+        `http://localhost:5000/api/users/appointments`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUserAppointments(res.data || []);
+    } catch (err) {
+      console.error("Error fetching user appointments:", err);
+      setUserAppointments([]);
+    } finally {
+      setUserAppointmentsLoading(false);
     }
   };
 
@@ -553,47 +576,203 @@ export default function Complaints() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex gap-4 flex-wrap">
-            <input
-              type="text"
-              placeholder="Search by complaint number or department..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-64 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Processing">Processing</option>
-              <option value="Resolved">Resolved</option>
-            </select>
-          </div>
+        {/* Tabs Navigation */}
+        <div className="flex gap-2 mb-6 border-b border-gray-300">
+          <button
+            onClick={() => setActiveTab("complaints")}
+            className={`px-6 py-3 font-semibold text-lg transition-all ${
+              activeTab === "complaints"
+                ? "border-b-4 border-blue-600 text-blue-600"
+                : "border-b-4 border-transparent text-gray-600 hover:text-blue-500"
+            }`}
+          >
+            <FaClipboardList className="inline-block mr-2" />
+            My Complaints
+          </button>
+          <button
+            onClick={() => setActiveTab("appointments")}
+            className={`px-6 py-3 font-semibold text-lg transition-all ${
+              activeTab === "appointments"
+                ? "border-b-4 border-blue-600 text-blue-600"
+                : "border-b-4 border-transparent text-gray-600 hover:text-blue-500"
+            }`}
+          >
+            <FaCalendarAlt className="inline-block mr-2" />
+            Appointments
+          </button>
+          <button
+            onClick={() => setActiveTab("communications")}
+            className={`px-6 py-3 font-semibold text-lg transition-all ${
+              activeTab === "communications"
+                ? "border-b-4 border-blue-600 text-blue-600"
+                : "border-b-4 border-transparent text-gray-600 hover:text-blue-500"
+            }`}
+          >
+            <FaComment className="inline-block mr-2" />
+            Communications
+          </button>
         </div>
 
-        {/* Complaints Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {getFilteredComplaints().length > 0 ? (
-            getFilteredComplaints().map((complaint) => (
-              <ComplaintCard key={complaint._id} complaint={complaint} />
-            ))
-          ) : (
-            <div className="col-span-2 bg-white rounded-lg shadow-md p-8 text-center">
-              <FaClipboardList className="text-4xl text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No complaints found</p>
-              <p className="text-gray-500 text-sm mt-2">
-                {complaints.length === 0
-                  ? "You haven't submitted any complaints yet."
-                  : "Try adjusting your search or filter criteria."}
-              </p>
+        {/* TAB: My Complaints */}
+        {activeTab === "complaints" && (
+          <>
+            {/* Filters */}
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+              <div className="flex gap-4 flex-wrap">
+                <input
+                  type="text"
+                  placeholder="Search by complaint number or department..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 min-w-64 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Resolved">Resolved</option>
+                </select>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Complaints Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {getFilteredComplaints().length > 0 ? (
+                getFilteredComplaints().map((complaint) => (
+                  <ComplaintCard key={complaint._id} complaint={complaint} />
+                ))
+              ) : (
+                <div className="col-span-2 bg-white rounded-lg shadow-md p-8 text-center">
+                  <FaClipboardList className="text-4xl text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 text-lg">No complaints found</p>
+                  <p className="text-gray-500 text-sm mt-2">
+                    {complaints.length === 0
+                      ? "You haven't submitted any complaints yet."
+                      : "Try adjusting your search or filter criteria."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* TAB: Appointments */}
+        {activeTab === "appointments" && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            {userAppointmentsLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <FaSpinner className="text-4xl text-blue-500 animate-spin mb-4" />
+                <p className="text-gray-600">Loading appointments...</p>
+              </div>
+            ) : userAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {userAppointments.map((appointment) => (
+                  <div key={appointment._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          <FaExclamationTriangle className="inline-block mr-2 text-yellow-600" />
+                          <span className="font-semibold">Complaint ID:</span> {appointment.complaintId?.complaintNumber || "N/A"}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-2">
+                          <FaUser className="inline-block mr-2 text-blue-600" />
+                          <span className="font-semibold">Admin:</span> {appointment.adminId?.name || "Unassigned"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          <FaCalendarAlt className="inline-block mr-2 text-green-600" />
+                          <span className="font-semibold">Date:</span> {appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleDateString() : "N/A"}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-2">
+                          <FaClock className="inline-block mr-2 text-purple-600" />
+                          <span className="font-semibold">Time:</span> {appointment.appointmentTime || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-sm text-gray-600">
+                        <FaMapMarkerAlt className="inline-block mr-2 text-red-600" />
+                        <span className="font-semibold">Location:</span> {appointment.location || "To be confirmed"}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        <span className={`font-semibold px-3 py-1 rounded-full text-white ${
+                          appointment.status === 'Scheduled' ? 'bg-blue-500' :
+                          appointment.status === 'Completed' ? 'bg-green-500' :
+                          appointment.status === 'Cancelled' ? 'bg-red-500' :
+                          appointment.status === 'Rescheduled' ? 'bg-orange-500' :
+                          'bg-gray-500'
+                        }`}>
+                          {appointment.status || "Pending"}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <FaCalendarAlt className="text-4xl text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 text-lg">No appointments scheduled</p>
+                <p className="text-gray-500 text-sm mt-2">Your scheduled appointments will appear here</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: Communications */}
+        {activeTab === "communications" && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            {complaints.length === 0 ? (
+              <div className="text-center py-12">
+                <FaComment className="text-4xl text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 text-lg">No communications yet</p>
+                <p className="text-gray-500 text-sm mt-2">You'll see admin feedback and messages here</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {complaints.map((complaint) => (
+                  complaint.adminFeedback && complaint.adminFeedback.length > 0 && (
+                    <div key={complaint._id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="mb-3 pb-3 border-b border-gray-200">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-semibold">Complaint:</span> {complaint.citizenName} - {complaint.department}
+                        </p>
+                      </div>
+                      {complaint.adminFeedback.map((feedback, idx) => (
+                        <div key={idx} className="mb-3 last:mb-0">
+                          <div className="flex gap-3">
+                            <div className={`px-3 py-1 rounded-full text-white text-xs font-semibold ${
+                              feedback.isQuestion ? 'bg-orange-500' : 'bg-blue-500'
+                            }`}>
+                              {feedback.isQuestion ? 'Question' : 'Feedback'}
+                            </div>
+                            {feedback.requiresResponse && (
+                              <div className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">
+                                Response Needed
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-gray-700 mt-2">{feedback.message}</p>
+                          {feedback.response && (
+                            <div className="mt-2 pl-4 border-l-2 border-green-500 bg-green-50 p-2 rounded">
+                              <p className="text-xs text-gray-600 font-semibold">Your Response:</p>
+                              <p className="text-gray-700">{feedback.response}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Modals */}
