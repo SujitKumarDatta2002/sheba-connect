@@ -4161,7 +4161,7 @@
 // }
 
 
-
+import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { 
@@ -4276,7 +4276,7 @@ export default function Complaints({ user }) {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        "http://localhost:5000/api/ai/translate",
+        `${API}/api/ai/translate`,
         { text, targetLang },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -4300,7 +4300,7 @@ export default function Complaints({ user }) {
       const token = localStorage.getItem('token');
       
       const response = await axios.post(
-        "http://localhost:5000/api/ai/generate-complaint",
+        `${API}/api/ai/generate-complaint`,
         {
           department: formData.department,
           keyword: formData.issueKeyword,
@@ -4388,7 +4388,7 @@ export default function Complaints({ user }) {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        "http://localhost:5000/api/ai/translate-user-data",
+        `${API}/api/ai/translate-user-data`,
         {
           name: formData.citizenName,
           address: formData.address,
@@ -4661,7 +4661,7 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
 
       const token = localStorage.getItem('token');
       const res = await axios.post(
-        "http://localhost:5000/api/complaints/create", 
+        `${API}/api/complaints/create`, 
         complaintData,
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -4729,7 +4729,7 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `http://localhost:5000/api/complaints/${editingComplaint._id}`,
+        `${API}/api/complaints/${editingComplaint._id}`,
         {
           description: editFormData.description,
           formalTemplate: editFormData.formalTemplate,
@@ -4762,7 +4762,7 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `http://localhost:5000/api/complaints/${selectedForFeedback._id}/feedback`,
+        `${API}/api/complaints/${selectedForFeedback._id}/feedback`,
         {
           message: feedbackMessage,
           isQuestion: false,
@@ -4790,7 +4790,7 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `http://localhost:5000/api/complaints/${selectedComplaint._id}/respond`,
+        `${API}/api/complaints/${selectedComplaint._id}/respond`,
         {
           feedbackId: selectedFeedbackForResponse._id,
           response: responseMessage
@@ -4817,12 +4817,12 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
       const token = localStorage.getItem('token');
       
       // Fetch all complaints
-      const allRes = await axios.get("http://localhost:5000/api/complaints", {
+      const allRes = await axios.get(`${API}/api/complaints`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       // Fetch user's own complaints for full details
-      const myRes = await axios.get("http://localhost:5000/api/complaints/my", {
+      const myRes = await axios.get(`${API}/api/complaints/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -4858,7 +4858,7 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
   const fetchUserSolutions = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get("http://localhost:5000/api/solutions/my", {
+      const res = await axios.get(`${API}/api/solutions/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUserSolutions(res.data);
@@ -4892,7 +4892,7 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
       }
       
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/complaints/${deleteTarget}`, {
+      await axios.delete(`${API}/api/complaints/${deleteTarget}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -4921,7 +4921,7 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/complaints/${complaintId}/status`, 
+        `${API}/api/complaints/${complaintId}/status`, 
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );

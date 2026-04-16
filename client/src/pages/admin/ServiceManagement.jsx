@@ -1,3 +1,4 @@
+import API from "../../config/api";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
@@ -88,7 +89,7 @@ export default function ServiceManagement() {
     try {
       const token = localStorage.getItem('token');
       await axios.patch(
-        `http://localhost:5000/api/admin/services/${id}/toggle`,
+        `${API}/api/admin/services/${id}/toggle`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -121,7 +122,7 @@ export default function ServiceManagement() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/services', {
+      const res = await axios.get(`${API}/api/admin/services`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setServices(res.data);
@@ -136,7 +137,7 @@ export default function ServiceManagement() {
   const fetchHelplines = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/helplines', {
+      const res = await axios.get(`${API}/api/admin/helplines`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHelplines(res.data);
@@ -150,8 +151,8 @@ export default function ServiceManagement() {
     try {
       const token = localStorage.getItem('token');
       const url = editingItem
-        ? `http://localhost:5000/api/admin/services/${editingItem._id}`
-        : 'http://localhost:5000/api/admin/services';
+        ? `${API}/api/admin/services/${editingItem._id}`
+        : `${API}/api/admin/services`;
 
       const method = editingItem ? 'put' : 'post';
 
@@ -178,8 +179,8 @@ export default function ServiceManagement() {
     try {
       const token = localStorage.getItem('token');
       const url = editingItem
-        ? `http://localhost:5000/api/admin/helplines/${editingItem._id}`
-        : 'http://localhost:5000/api/admin/helplines';
+        ? `${API}/api/admin/helplines/${editingItem._id}`
+        : `${API}/api/admin/helplines`;
 
       const method = editingItem ? 'put' : 'post';
 
@@ -213,8 +214,8 @@ export default function ServiceManagement() {
     try {
       const token = localStorage.getItem('token');
       const endpoint = type === 'service' 
-        ? `http://localhost:5000/api/admin/services/${id}`
-        : `http://localhost:5000/api/admin/helplines/${id}`;
+        ? `${API}/api/admin/services/${id}`
+        : `${API}/api/admin/helplines/${id}`;
 
       await axios.delete(endpoint, {
         headers: { Authorization: `Bearer ${token}` }

@@ -501,7 +501,7 @@
 
 
 
-
+import API from "../config/api";
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -816,7 +816,7 @@ export default function Services() {
         params.append(k, v);
       }
     });
-    axios.get('http://localhost:5000/api/services?' + params.toString())
+    axios.get(`${API}/api/services?` + params.toString())
       .then(function(res) { setServices(res.data); })
       .catch(function(err) { console.error('Error fetching services:', err); })
       .finally(function() { setLoading(false); });
@@ -826,7 +826,7 @@ export default function Services() {
     var params = new URLSearchParams();
     if (helplineCategory) params.append('category', helplineCategory);
     if (helplineSearch)   params.append('search',   helplineSearch);
-    axios.get('http://localhost:5000/api/helplines?' + params.toString())
+    axios.get(`${API}/api/helplines?` + params.toString())
       .then(function(res) { setHelplines(res.data); })
       .catch(function(err) { console.error('Error fetching helplines:', err); });
   }, [helplineCategory, helplineSearch]);

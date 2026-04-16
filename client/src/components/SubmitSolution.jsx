@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState } from "react";
 import axios from "axios";
 import { 
@@ -60,7 +61,7 @@ export default function SubmitSolution({ complaint, onClose, onSubmit }) {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        "http://localhost:5000/api/solutions",
+        `${API}/api/solutions`,
         formData,
         {
           headers: { Authorization: `Bearer ${token}` }

@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -45,7 +46,7 @@ export default function Complaints() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get("http://localhost:5000/api/complaints/my", {
+      const res = await axios.get(`${API}/api/complaints/my`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setComplaints(res.data);
@@ -104,7 +105,7 @@ export default function Complaints() {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/complaints/${selectedComplaint._id}/edit`,
+        `${API}/api/complaints/${selectedComplaint._id}/edit`,
         editForm,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -128,7 +129,7 @@ export default function Complaints() {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `http://localhost:5000/api/complaints/${selectedComplaint._id}/respond`,
+        `${API}/api/complaints/${selectedComplaint._id}/respond`,
         { feedbackId, response: feedbackResponse },
         { headers: { Authorization: `Bearer ${token}` } }
       );

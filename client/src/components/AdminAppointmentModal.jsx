@@ -1,3 +1,5 @@
+import API from "../config/api";
+
 import { useState } from "react";
 import axios from "axios";
 import {
@@ -42,7 +44,7 @@ export default function AdminAppointmentModal({ complaint, user, onClose, onSucc
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        'http://localhost:5000/api/admin/appointments',
+        `${API}/api/admin/appointments`,
         {
           complaintId: complaint._id,
           userId: user._id,

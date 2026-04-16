@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { 
@@ -24,7 +25,7 @@ export default function ViewSolutions({ department, keyword, onSelect }) {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(
-        `http://localhost:5000/api/solutions/public?department=${department}&keyword=${keyword}`,
+        `${API}/api/solutions/public?department=${department}&keyword=${keyword}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -41,7 +42,7 @@ export default function ViewSolutions({ department, keyword, onSelect }) {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `http://localhost:5000/api/solutions/${id}/rate`,
+        `${API}/api/solutions/${id}/rate`,
         { helpful },
         {
           headers: { Authorization: `Bearer ${token}` }

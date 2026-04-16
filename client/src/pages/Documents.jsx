@@ -641,7 +641,7 @@
 
 
 
-
+import API from "../config/api";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -825,7 +825,7 @@ export default function Documents() {
     setLoading(true);
     try {
       const token = getToken(); if (!token) return;
-      const res = await axios.get("http://localhost:5000/api/documents", authHeader(token));
+      const res = await axios.get(`${API}/api/documents`, authHeader(token));
       setDocuments(res.data);
     } catch (err) {
       if (err.response?.status === 401) {
@@ -837,7 +837,7 @@ export default function Documents() {
   const fetchProfileStatus = async () => {
     try {
       const token = getToken(); if (!token) return;
-      const res = await axios.get("http://localhost:5000/api/users/profile/status", authHeader(token));
+      const res = await axios.get(`${API}/api/users/profile/status`, authHeader(token));
       setProfileStatus(res.data);
     } catch (err) { if (err.response?.status === 401) navigate("/login"); }
   };
@@ -850,7 +850,7 @@ export default function Documents() {
     if (!window.confirm(`Are you sure you want to delete ${docName}?`)) return;
     try {
       const token = getToken(); if (!token) return;
-      await axios.delete(`http://localhost:5000/api/documents/${id}`, authHeader(token));
+      await axios.delete(`${API}/api/documents/${id}`, authHeader(token));
       fetchDocuments(); fetchProfileStatus();
       showNotification("Document deleted successfully", "success");
     } catch (err) {
@@ -864,7 +864,7 @@ export default function Documents() {
     try {
       const token = getToken(); if (!token) return;
       const res = await axios.get(
-        `http://localhost:5000/api/documents/${doc._id}/download`,
+        `${API}/api/documents/${doc._id}/download`,
         { ...authHeader(token), responseType: "blob" }
       );
       const blob = new Blob([res.data], { type: "application/pdf" });
@@ -888,7 +888,7 @@ export default function Documents() {
     try {
       const token = getToken(); if (!token) return;
       const res = await axios.get(
-        `http://localhost:5000/api/documents/${doc._id}/download`,
+        `${API}/api/documents/${doc._id}/download`,
         { ...authHeader(token), responseType: "blob" }
       );
       const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));

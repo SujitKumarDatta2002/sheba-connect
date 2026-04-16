@@ -1,3 +1,4 @@
+import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { 
@@ -38,7 +39,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(
-        `http://localhost:5000/api/admin/complaints/${complaint._id}`,
+        `${API}/api/admin/complaints/${complaint._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setComplaintData(res.data);
@@ -72,7 +73,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
       console.log('Sending status update:', { id: complaint._id, status: newStatus });
       
       const response = await axios.put(
-        `http://localhost:5000/api/admin/complaints/${complaint._id}/status`,
+        `${API}/api/admin/complaints/${complaint._id}/status`,
         { status: newStatus, comment: `Status updated to ${newStatus} by admin` },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -111,7 +112,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `http://localhost:5000/api/admin/complaints/${complaint._id}/feedback`,
+        `${API}/api/admin/complaints/${complaint._id}/feedback`,
         {
           message: feedbackMessage,
           isQuestion,
@@ -149,7 +150,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `http://localhost:5000/api/admin/complaints/${complaint._id}/feedback/${feedbackId}/respond`,
+        `${API}/api/admin/complaints/${complaint._id}/feedback/${feedbackId}/respond`,
         {
           response: adminResponse
         },
@@ -169,7 +170,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/complaints/${complaint._id}/edits/${editId}/review`,
+        `${API}/api/admin/complaints/${complaint._id}/edits/${editId}/review`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -194,7 +195,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `http://localhost:5000/api/admin/appointments`,
+        `${API}/api/admin/appointments`,
         {
           complaintId: complaint._id,
           userId: complaintData.userId,

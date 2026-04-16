@@ -395,7 +395,7 @@
 
 
 
-
+import API from "../config/api";
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -680,7 +680,7 @@ export default function NearbyOffices() {
     setLoading(true);
     setError(null);
 
-    axios.get('http://localhost:5000/api/offices/nearby', {
+    axios.get(`${API}/api/offices/nearby`, {
       params: { serviceId: serviceId, userLat: userLocation.lat, userLng: userLocation.lng }
     })
     .then(function(res) {
