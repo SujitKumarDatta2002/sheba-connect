@@ -153,6 +153,24 @@ const getPendingSolutions = async (req, res) => {
   }
 };
 
+// Admin: Get all solutions (for filtering/review)
+const getAllSolutions = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const solutions = await Solution.find()
+    .populate('userId', 'name email')
+    .sort({ createdAt: -1 });
+
+    res.json(solutions);
+  } catch (error) {
+    console.error("Error fetching all solutions:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Admin: Verify/Reject solution
 const verifySolution = async (req, res) => {
   try {
@@ -291,6 +309,7 @@ module.exports = {
   getPublicSolutions,
   getSolutionById,
   getPendingSolutions,
+  getAllSolutions,
   verifySolution,
   rateSolution,
   updateSolution,

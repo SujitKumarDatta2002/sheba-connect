@@ -125,6 +125,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboardNew from "./pages/AdminDashboardNew";
 import NearbyOffices from "./pages/NearbyOffices"; // 👈 Import new page
 import ServiceManagement from "./pages/admin/ServiceManagement";
 import UserNotifications from "./pages/UserNotifications";
@@ -227,16 +228,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
-          {/* Admin Dashboard Route */}
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute>
-                <AdminDashboard />
-              </PrivateRoute>
-            }
-          />
 
           {/* Service Management Route */}
           <Route

@@ -7,6 +7,7 @@ const {
   getPublicSolutions,
   getSolutionById,
   getPendingSolutions,
+  getAllSolutions,
   verifySolution,
   rateSolution,
   updateSolution,
@@ -39,6 +40,7 @@ router.delete("/:id", deleteSolution);
 
 // Admin routes
 router.get("/admin/pending", getPendingSolutions);
+router.get("/admin/all", getAllSolutions);
 router.put("/admin/:id/verify", verifySolution);
 
 module.exports = router;
