@@ -394,6 +394,10 @@ const complaintSchema = new mongoose.Schema(
         type: Boolean,
         default: false
       },
+      isRead: {
+        type: Boolean,
+        default: false
+      },
       response: {
         text: String,
         respondedAt: Date,

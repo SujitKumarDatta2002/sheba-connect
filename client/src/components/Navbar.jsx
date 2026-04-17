@@ -259,11 +259,38 @@ import {
   FaLightbulb,
   FaPhone
 } from "react-icons/fa";
+import axios from "axios";
+import { useEffect } from "react";
+import API from "../config/api";
 
 export default function Navbar({ user, setUser }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      fetchUnreadCount();
+      // Poll every 30 seconds for new notifications
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${API}/api/users/notifications/unread-count`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUnreadCount(response.data.total || 0);
+    } catch (error) {
+      console.warn('Error fetching unread count:', error.message);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -327,10 +354,18 @@ export default function Navbar({ user, setUser }) {
               <>
                 {/* Notification Bell - Only for regular users */}
                 {user.role !== 'admin' && (
-                  <button className="relative p-2 hover:bg-blue-800 rounded-full">
+                  <Link
+                    to="/notifications"
+                    className="relative p-2 hover:bg-blue-800 rounded-full transition-colors"
+                    title="View your messages and notifications"
+                  >
                     <FaBell className="text-xl" />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </button>
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 w-6 h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </Link>
                 )}
 
                 {/* Profile Dropdown */}
@@ -381,13 +416,22 @@ export default function Navbar({ user, setUser }) {
                           </Link>
                         </>
                       ) : (
-                        <Link
-                          to="/profile"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setIsProfileOpen(false)}
-                        >
-                          Your Profile
-                        </Link>
+                        <>
+                          <Link
+                            to="/notifications"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            <FaBell /> {unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages'}
+                          </Link>
+                          <Link
+                            to="/profile"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            Your Profile
+                          </Link>
+                        </>
                       )}
                       <button
                         onClick={handleLogout}

@@ -127,6 +127,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import NearbyOffices from "./pages/NearbyOffices"; // 👈 Import new page
 import ServiceManagement from "./pages/admin/ServiceManagement";
+import UserNotifications from "./pages/UserNotifications";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -203,6 +204,16 @@ function App() {
           element={
             <PrivateRoute>
               <NearbyOffices />
+            </PrivateRoute>
+          }
+        />
+
+        {/* User Notifications Route */}
+        <Route
+          path="/notifications"
+          element={
+            <PrivateRoute>
+              <UserNotifications />
             </PrivateRoute>
           }
         />

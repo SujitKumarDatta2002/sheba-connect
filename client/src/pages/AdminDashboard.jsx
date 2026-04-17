@@ -1418,7 +1418,7 @@ export default function AdminDashboard() {
                         {/* Citizen Info */}
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                           <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                            <FaUser className="text-blue-600" /> Citizen Information
+                            <FaUserCircle className="text-blue-600" /> Citizen Information
                           </h4>
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>

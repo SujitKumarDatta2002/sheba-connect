@@ -58,7 +58,13 @@ const appointmentSchema = new mongoose.Schema(
       respondedAt: Date,
       reason: String
     },
-    
+
+    // Read status for user
+    isRead: {
+      type: Boolean,
+      default: false
+    },
+
     // Reschedule requests
     rescheduleRequests: [{
       requestedAt: {
