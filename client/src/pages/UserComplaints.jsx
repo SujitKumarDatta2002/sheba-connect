@@ -6,23 +6,34 @@ import {
   FaComment, FaCheckCircle, FaClock, FaExclamationTriangle,
   FaSpinner, FaCalendarAlt, FaTextHeight, FaReply, FaTimes,
   FaTimesCircle, FaChevronDown, FaUser, FaBell, FaArrowRight,
+<<<<<<< HEAD
+  FaEye
+=======
   FaEye, FaMapMarkerAlt
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
 } from "react-icons/fa";
 
 export default function Complaints() {
   const [complaints, setComplaints] = useState([]);
+<<<<<<< HEAD
+  const [loading, setLoading] = useState(true);
+=======
   const [complaintAppointments, setComplaintAppointments] = useState([]);
   const [userAppointments, setUserAppointments] = useState([]);
   const [activeTab, setActiveTab] = useState("complaints");
   const [loading, setLoading] = useState(true);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [userAppointmentsLoading, setUserAppointmentsLoading] = useState(false);
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+<<<<<<< HEAD
+=======
   const [showEditSuccessModal, setShowEditSuccessModal] = useState(false);
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
   // Edit form state
@@ -37,6 +48,11 @@ export default function Complaints() {
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [sendingResponse, setSendingResponse] = useState(false);
 
+<<<<<<< HEAD
+  useEffect(() => {
+    fetchComplaints();
+  }, []);
+=======
   // Appointment response state
   const [respondingToAppointment, setRespondingToAppointment] = useState(null);
   const [appointmentResponseType, setAppointmentResponseType] = useState(null);
@@ -47,6 +63,7 @@ export default function Complaints() {
       fetchUserAppointments();
     }
   }, [activeTab]);
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
 
   const showNotification = (message, type) => {
     setNotification({ show: true, message, type });
@@ -69,6 +86,8 @@ export default function Complaints() {
     }
   };
 
+<<<<<<< HEAD
+=======
   const fetchComplaintAppointments = async (complaintId) => {
     setAppointmentsLoading(true);
     try {
@@ -113,6 +132,7 @@ export default function Complaints() {
     });
   };
 
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   const getFilteredComplaints = () => {
     return complaints.filter(complaint => {
       const matchesSearch = complaint.complaintNumber?.includes(searchTerm) ||
@@ -138,9 +158,14 @@ export default function Complaints() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+<<<<<<< HEAD
+      showNotification("Complaint updated successfully", "success");
+      setShowEditModal(false);
+=======
       closeEditModal();
       setShowEditSuccessModal(true);
       setTimeout(() => setShowEditSuccessModal(false), 3000);
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
       fetchComplaints();
     } catch (err) {
       console.error("Error editing complaint:", err);
@@ -175,6 +200,8 @@ export default function Complaints() {
     }
   };
 
+<<<<<<< HEAD
+=======
   const handleRespondToAppointment = async (appointmentId, responseStatus) => {
     try {
       const token = localStorage.getItem('token');
@@ -193,6 +220,7 @@ export default function Complaints() {
     }
   };
 
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   const openEditModal = (complaint) => {
     setSelectedComplaint(complaint);
     setEditForm({
@@ -206,7 +234,10 @@ export default function Complaints() {
   const openDetailModal = (complaint) => {
     setSelectedComplaint(complaint);
     setShowDetailModal(true);
+<<<<<<< HEAD
+=======
     fetchComplaintAppointments(complaint._id);
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   };
 
   // Status Badge Component
@@ -377,6 +408,8 @@ export default function Complaints() {
               </div>
             )}
 
+<<<<<<< HEAD
+=======
             <div>
               <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <FaCalendarAlt /> Related Appointments
@@ -423,6 +456,7 @@ export default function Complaints() {
               )}
             </div>
 
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
             {/* Admin Feedback */}
             {selectedComplaint.adminFeedback && selectedComplaint.adminFeedback.length > 0 && (
               <div>
@@ -487,7 +521,11 @@ export default function Complaints() {
               <FaEdit /> Edit Complaint
             </h2>
             <button
+<<<<<<< HEAD
+              onClick={() => setShowEditModal(false)}
+=======
               onClick={closeEditModal}
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
               className="text-white hover:bg-green-800 p-2 rounded transition"
             >
               <FaTimes size={24} />
@@ -549,7 +587,11 @@ export default function Complaints() {
             <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
               <button
                 type="button"
+<<<<<<< HEAD
+                onClick={() => setShowEditModal(false)}
+=======
                 onClick={closeEditModal}
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
                 className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-900 rounded-lg hover:bg-gray-50 transition font-medium"
               >
                 Cancel
@@ -567,6 +609,8 @@ export default function Complaints() {
     );
   };
 
+<<<<<<< HEAD
+=======
   // Edit Success Modal Component
   const EditSuccessModal = () => {
     if (!showEditSuccessModal) return null;
@@ -584,6 +628,7 @@ export default function Complaints() {
     );
   };
 
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -617,6 +662,49 @@ export default function Complaints() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+<<<<<<< HEAD
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="flex gap-4 flex-wrap">
+            <input
+              type="text"
+              placeholder="Search by complaint number or department..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 min-w-64 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Processing">Processing</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Complaints Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {getFilteredComplaints().length > 0 ? (
+            getFilteredComplaints().map((complaint) => (
+              <ComplaintCard key={complaint._id} complaint={complaint} />
+            ))
+          ) : (
+            <div className="col-span-2 bg-white rounded-lg shadow-md p-8 text-center">
+              <FaClipboardList className="text-4xl text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg">No complaints found</p>
+              <p className="text-gray-500 text-sm mt-2">
+                {complaints.length === 0
+                  ? "You haven't submitted any complaints yet."
+                  : "Try adjusting your search or filter criteria."}
+              </p>
+            </div>
+          )}
+        </div>
+=======
         {/* Tabs Navigation */}
         <div className="flex gap-2 mb-6 border-b border-gray-300">
           <button
@@ -847,12 +935,16 @@ export default function Complaints() {
             )}
           </div>
         )}
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
       </div>
 
       {/* Modals */}
       <DetailModal />
       <EditModal />
+<<<<<<< HEAD
+=======
       <EditSuccessModal />
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
     </div>
   );
 }

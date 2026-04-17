@@ -126,9 +126,11 @@ import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminDashboardNew from "./pages/AdminDashboardNew";
-import NearbyOffices from "./pages/NearbyOffices"; // 👈 Import new page
+import NearbyOffices from "./pages/NearbyOffices"; 
 import ServiceManagement from "./pages/admin/ServiceManagement";
 import UserNotifications from "./pages/UserNotifications";
+import Profile from "./pages/Profile";
+import ServiceApplication from "./pages/ServiceApplication";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -229,15 +231,35 @@ function App() {
           }
         />
 
-          {/* Service Management Route */}
-          <Route
-            path="/admin/services"
-            element={
-              <PrivateRoute>
-                <ServiceManagement />
-              </PrivateRoute>
-            }
-          />
+        {/* Service Management Route */}
+        <Route
+          path="/admin/services"
+          element={
+            <PrivateRoute>
+              <ServiceManagement />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Profile Route */}
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Service Application Route */}
+        <Route
+          path="/apply-service/:serviceId"
+          element={
+            <PrivateRoute>
+              <ServiceApplication />
+            </PrivateRoute>
+          }
+        />
 
       </Routes>
 

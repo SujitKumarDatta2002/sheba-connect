@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 // import API from "../config/api";
 // import { useState, useEffect } from "react";
 // import axios from "axios";
@@ -942,11 +944,15 @@
 //     </div>
 //   );
 // }
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
 import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+<<<<<<< HEAD
+=======
 import ServiceManagement from "./admin/ServiceManagement";
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
 import {
   FaUsers, FaClipboardList, FaLightbulb, FaFileAlt,
   FaCheckCircle, FaTimesCircle, FaClock, FaExclamationTriangle,
@@ -958,8 +964,13 @@ import {
   FaUpload, FaPaperPlane, FaStar, FaRegStar,
   FaFilePdf, FaSpinner, FaUserCircle, FaEnvelope, FaPhone,
   FaIdCard, FaMapMarkerAlt, FaChartLine, FaHistory,
+<<<<<<< HEAD
+  FaAlertCircle, FaBell, FaArrowRight, FaTextHeight,
+  FaArrowUp, FaArrowDown
+=======
   FaBell, FaArrowRight, FaTextHeight,
   FaArrowUp, FaArrowDown, FaInfoCircle
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
 } from "react-icons/fa";
 
 export default function AdminDashboard() {
@@ -986,7 +997,10 @@ export default function AdminDashboard() {
   // Modals
   const [showComplaintDetail, setShowComplaintDetail] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+<<<<<<< HEAD
+=======
   const [loadingComplaintDetail, setLoadingComplaintDetail] = useState(false);
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   
@@ -1044,6 +1058,11 @@ export default function AdminDashboard() {
     });
   };
 
+<<<<<<< HEAD
+  const handleComplaintClick = (complaint) => {
+    setSelectedComplaint(complaint);
+    setShowComplaintDetail(true);
+=======
   const handleComplaintClick = async (complaint) => {
     setLoadingComplaintDetail(true);
     try {
@@ -1060,6 +1079,7 @@ export default function AdminDashboard() {
     } finally {
       setLoadingComplaintDetail(false);
     }
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   };
 
   const updateComplaintStatus = async (complaintId, newStatus) => {
@@ -1107,6 +1127,8 @@ export default function AdminDashboard() {
     }
   };
 
+<<<<<<< HEAD
+=======
   const handleApproveReschedule = async (appointmentId, requestId) => {
     try {
       const token = localStorage.getItem('token');
@@ -1171,6 +1193,7 @@ export default function AdminDashboard() {
     }
   };
 
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
   // ============================================
   // UI COMPONENTS
   // ============================================
@@ -1235,7 +1258,11 @@ export default function AdminDashboard() {
             {unreviewed > 0 && (
               <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
                 <p className="text-xs text-orange-700 flex items-center gap-1">
+<<<<<<< HEAD
+                  <FaAlertCircle /> {unreviewed} unreviewed edit(s)
+=======
                   <FaInfoCircle /> {unreviewed} unreviewed edit(s)
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
                 </p>
               </div>
             )}
@@ -1288,6 +1315,24 @@ export default function AdminDashboard() {
           </p>
         </div>
       )}
+<<<<<<< HEAD
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={() => {
+            setSelectedComplaint(appointment);
+            setShowAppointmentModal(true);
+          }}
+          className="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600 transition"
+        >
+          <FaEdit className="inline mr-1" /> Edit
+        </button>
+        <button
+          onClick={() => deleteAppointment(appointment._id)}
+          className="bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600 transition"
+        >
+          <FaTrash />
+        </button>
+=======
       <div className="mt-3 space-y-2">
         <div className="flex gap-2">
           <button
@@ -1326,6 +1371,7 @@ export default function AdminDashboard() {
             <FaTimes className="inline mr-1" size={12} /> Rejected
           </button>
         </div>
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
       </div>
     </div>
   );
@@ -1436,6 +1482,8 @@ export default function AdminDashboard() {
       }
     };
 
+<<<<<<< HEAD
+=======
     const relatedAppointments = appointments.filter((appointment) => {
       const appointmentComplaintId =
         typeof appointment.complaintId === "string"
@@ -1444,6 +1492,7 @@ export default function AdminDashboard() {
       return appointmentComplaintId === selectedComplaint._id;
     });
 
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-96 overflow-auto">
@@ -1494,6 +1543,8 @@ export default function AdminDashboard() {
                   </p>
                 </div>
 
+<<<<<<< HEAD
+=======
                 <div>
                   <p className="text-xs font-bold text-gray-600 flex items-center gap-2 mb-2">
                     <FaCalendarAlt /> Related Appointments
@@ -1594,6 +1645,7 @@ export default function AdminDashboard() {
                   )}
                 </div>
 
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
                 {/* Edit History Section */}
                 <div>
                   <p className="text-xs font-bold text-gray-600 flex items-center gap-2 mb-2">
@@ -1702,7 +1754,11 @@ export default function AdminDashboard() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+<<<<<<< HEAD
+          <p className="text-blue-100 mt-1">Manage complaints, appointments, and user feedback</p>
+=======
           <p className="text-blue-100 mt-1">Manage complaints, appointments, services, and user feedback</p>
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
         </div>
       </div>
 
@@ -1715,12 +1771,15 @@ export default function AdminDashboard() {
         </div>
       )}
 
+<<<<<<< HEAD
+=======
       {loadingComplaintDetail && (
         <div className="mx-4 mt-4 p-4 rounded-lg bg-blue-50 text-blue-800">
           Loading complaint details...
         </div>
       )}
 
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Overview Stats */}
         {activeTab === "overview" && (
@@ -1732,14 +1791,21 @@ export default function AdminDashboard() {
           </div>
         )}
 
+<<<<<<< HEAD
+        {/* Tab Navigation */}
+=======
         {/* Tab Navigation - Added Services Tab */}
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
         <div className="bg-white rounded-lg shadow-md mb-6 overflow-x-auto">
           <div className="flex border-b border-gray-200">
             <TabButton name="overview" label="Overview" icon={FaChartBar} count={0} />
             <TabButton name="complaints" label="Complaints" icon={FaClipboardList} count={unreviewedEditsOnly ? 0 : stats.unreviewedEdits} />
             <TabButton name="appointments" label="Appointments" icon={FaCalendarAlt} count={appointments.filter(a => a.userResponse?.status === 'Requested Reschedule').length} />
             <TabButton name="users" label="Users" icon={FaUsers} count={0} />
+<<<<<<< HEAD
+=======
             <TabButton name="services" label="Services" icon={FaCog} count={0} />
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
           </div>
         </div>
 
@@ -1773,7 +1839,11 @@ export default function AdminDashboard() {
                       : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                   }`}
                 >
+<<<<<<< HEAD
+                  <FaAlertCircle className="inline mr-2" />
+=======
                   <FaInfoCircle className="inline mr-2" />
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
                   Unreviewed Edits
                 </button>
               </div>
@@ -1834,7 +1904,10 @@ export default function AdminDashboard() {
                     <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Phone</th>
                     <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Role</th>
                     <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Joined</th>
+<<<<<<< HEAD
+=======
                     <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Actions</th>
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
                   </tr>
                 </thead>
                 <tbody>
@@ -1855,6 +1928,8 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
+<<<<<<< HEAD
+=======
                       <td className="px-4 py-3 text-sm flex gap-2">
                         <button
                           onClick={() => changeUserRole(user._id, user.role === 'admin' ? 'user' : 'admin')}
@@ -1867,6 +1942,7 @@ export default function AdminDashboard() {
                           {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
                         </button>
                       </td>
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
                     </tr>
                   ))}
                 </tbody>
@@ -1874,13 +1950,20 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+<<<<<<< HEAD
+=======
 
         {/* Services Tab */}
         {activeTab === "services" && <ServiceManagement />}
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
       </div>
 
       {/* Modals */}
       <ComplaintDetailModal />
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1

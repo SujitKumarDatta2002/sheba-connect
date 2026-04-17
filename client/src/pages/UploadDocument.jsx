@@ -4,7 +4,11 @@
 import API from "../config/api";
 import { useState, useEffect } from "react";
 import axios from "axios";
+<<<<<<< HEAD
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+=======
 import { useParams, useNavigate } from "react-router-dom";
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
 import { 
   FaUpload, FaFilePdf, FaTimes, FaCheckCircle, 
   FaArrowLeft, FaInfoCircle, FaFileAlt, FaShieldAlt,
@@ -15,6 +19,10 @@ import {
 export default function UploadDocument() {
   const { type } = useParams();
   const navigate = useNavigate();
+<<<<<<< HEAD
+  const location = useLocation();
+=======
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
 
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -24,6 +32,15 @@ export default function UploadDocument() {
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   const [existingDocument, setExistingDocument] = useState(null);
   const [fetchingDoc, setFetchingDoc] = useState(true);
+<<<<<<< HEAD
+  
+  // Get return URL from query params
+  const getReturnUrl = () => {
+    const urlParams = new URLSearchParams(location.search);
+    return urlParams.get('returnTo') || '/documents';
+  };
+=======
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
 
   // Get auth token
   const getAuthHeaders = () => {
@@ -229,8 +246,19 @@ export default function UploadDocument() {
 
       showNotification("Document uploaded successfully", "success");
       
+<<<<<<< HEAD
+      const returnUrl = getReturnUrl();
+      setTimeout(() => {
+        // Add parameter to indicate successful upload
+        if (returnUrl.includes('/apply-service/')) {
+          navigate(`${returnUrl}?justUploaded=true`);
+        } else {
+          navigate(returnUrl);
+        }
+=======
       setTimeout(() => {
         navigate("/documents");
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
       }, 1500);
 
     } catch (err) {
@@ -351,11 +379,21 @@ export default function UploadDocument() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <button
+<<<<<<< HEAD
+          onClick={() => navigate(getReturnUrl())}
+          className="group mb-6 inline-flex items-center gap-2 px-4 py-2 bg-white shadow-sm rounded-xl hover:shadow-md transition-all border border-gray-200 hover:border-gray-300"
+        >
+          <FaArrowLeft className="w-4 h-4 text-blue-600 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium text-gray-700 group-hover:text-gray-900">
+            {getReturnUrl().includes('/apply-service/') ? 'Back to Application' : 'Back to Documents'}
+          </span>
+=======
           onClick={() => navigate("/documents")}
           className="group mb-6 inline-flex items-center gap-2 px-4 py-2 bg-white shadow-sm rounded-xl hover:shadow-md transition-all border border-gray-200 hover:border-gray-300"
         >
           <FaArrowLeft className="w-4 h-4 text-blue-600 group-hover:-translate-x-1 transition-transform" />
           <span className="font-medium text-gray-700 group-hover:text-gray-900">Back to Documents</span>
+>>>>>>> 3c8289d15fa9d470ef64cf6f98721546cd2e5dc1
         </button>
 
         {/* Existing Document Card */}
