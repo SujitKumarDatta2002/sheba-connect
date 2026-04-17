@@ -4963,13 +4963,33 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
     fetchComplaints();
   };
 
-  const openSurveyForComplaint = (complaint) => {
+  const openSurveyForComplaint = async (complaint) => {
     if (surveySubmittedComplaints.includes(complaint._id)) {
       alert("You have already submitted a survey for this complaint. Thank you for your feedback!");
       return;
     }
-    setResolvedComplaint(complaint);
-    setShowSurvey(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${API}/api/surveys/check/${complaint._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.exists) {
+        alert("You have already submitted a survey for this complaint. Thank you for your feedback!");
+        setSurveySubmittedComplaints(prev => [...prev, complaint._id]);
+        return;
+      }
+      
+      setResolvedComplaint(complaint);
+      setShowSurvey(true);
+    } catch (err) {
+      console.warn("Survey check endpoint not available, showing survey anyway:", err.message);
+      // If endpoint doesn't exist yet, show survey anyway (user can submit new or get error on submit)
+      setResolvedComplaint(complaint);
+      setShowSurvey(true);
+    }
   };
 
   // ==================== PDF & Export Functions ====================
@@ -5186,7 +5206,7 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
         },
         {
           headers: {
-            'x-api-key': 'YOUR_PDF_CO_API_KEY_HERE',
+            'x-api-key': 'sujit.kumar.datta@g.bracu.ac.bd_uEbOR7ssNIeTJ40JOkYLE0pjp5e6jcWOM57jZbBXBcYcdurjDSLc8x9m3hbIbKcC',
             'Content-Type': 'application/json'
           }
         }
@@ -5320,18 +5340,48 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
     if (isAdmin) return;
     if (hasShownSurveyPopup) return;
     
-    const userResolvedComplaints = complaints.filter(c => 
-      c.status === "Resolved" && 
-      isMyComplaint(c) &&
-      !surveySubmittedComplaints.includes(c._id)
-    );
+    const checkAndShowSurvey = async () => {
+      const userResolvedComplaints = complaints.filter(c => 
+        c.status === "Resolved" && 
+        isMyComplaint(c) &&
+        !surveySubmittedComplaints.includes(c._id)
+      );
+      
+      if (userResolvedComplaints.length > 0 && !showSurvey && !resolvedComplaint) {
+        const latestResolved = userResolvedComplaints[0];
+        
+        try {
+          // Check backend if survey already exists
+          const token = localStorage.getItem('token');
+          const response = await axios.get(
+            `${API}/api/surveys/check/${latestResolved._id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          
+          if (!response.data.exists) {
+            setResolvedComplaint(latestResolved);
+            setShowSurvey(true);
+          } else {
+            // Survey already exists, mark as submitted
+            setSurveySubmittedComplaints(prev => {
+              if (!prev.includes(latestResolved._id)) {
+                return [...prev, latestResolved._id];
+              }
+              return prev;
+            });
+          }
+        } catch (err) {
+          // If check fails, show survey anyway
+          console.error("Error checking survey:", err);
+          setResolvedComplaint(latestResolved);
+          setShowSurvey(true);
+        }
+        
+        setHasShownSurveyPopup(true);
+      }
+    };
     
-    if (userResolvedComplaints.length > 0 && !showSurvey && !resolvedComplaint) {
-      const latestResolved = userResolvedComplaints[0];
-      setResolvedComplaint(latestResolved);
-      setShowSurvey(true);
-      setHasShownSurveyPopup(true);
-    }
+    checkAndShowSurvey();
   }, [complaints, surveySubmittedComplaints, isAdmin, showSurvey, resolvedComplaint, hasShownSurveyPopup]);
 
   useEffect(() => {

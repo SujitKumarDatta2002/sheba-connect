@@ -1463,4 +1463,61 @@ router.get('/complaints/feedback/pending', async (req, res) => {
   }
 });
 
+// Get survey statistics (Admin only) - MUST come before other /surveys routes
+router.get('/surveys/stats/overview', async (req, res) => {
+  try {
+    const totalSurveys = await Survey.countDocuments();
+    const avgSatisfaction = await Survey.aggregate([
+      { $group: { _id: null, avg: { $avg: '$satisfaction' } } }
+    ]);
+    const helpfulCount = await Survey.countDocuments({ helpful: true });
+    const avgResolutionTime = await Survey.aggregate([
+      { $group: { _id: null, avg: { $avg: '$resolutionTime' } } }
+    ]);
+
+    res.json({
+      totalSurveys,
+      avgSatisfaction: avgSatisfaction[0]?.avg || 0,
+      helpfulPercentage: totalSurveys > 0 ? (helpfulCount / totalSurveys * 100).toFixed(2) : 0,
+      avgResolutionTime: avgResolutionTime[0]?.avg || 0
+    });
+  } catch (error) {
+    console.error('Error fetching survey stats:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get survey by complaint ID (Admin only)
+router.get('/surveys/:complaintId', async (req, res) => {
+  try {
+    const survey = await Survey.findOne({ complaintId: req.params.complaintId })
+      .populate('userId', 'name email nid phone address')
+      .populate('complaintId', 'complaintNumber department issueKeyword');
+
+    if (!survey) {
+      return res.status(404).json({ message: 'Survey not found' });
+    }
+
+    res.json(survey);
+  } catch (error) {
+    console.error('Error fetching survey:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get all surveys (Admin only)
+router.get('/surveys', async (req, res) => {
+  try {
+    const surveys = await Survey.find()
+      .populate('userId', 'name email nid')
+      .populate('complaintId', 'complaintNumber department issueKeyword')
+      .sort({ createdAt: -1 });
+
+    res.json(surveys);
+  } catch (error) {
+    console.error('Error fetching surveys:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

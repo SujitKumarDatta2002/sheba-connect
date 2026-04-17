@@ -55,6 +55,17 @@ export default function AdminDashboard() {
   const [selectedComplaintDetail, setSelectedComplaintDetail] = useState(null);
   const [showComplaintDetail, setShowComplaintDetail] = useState(false);
 
+  // Survey states
+  const [surveys, setSurveys] = useState([]);
+  const [surveyStats, setSurveyStats] = useState({
+    totalSurveys: 0,
+    avgSatisfaction: 0,
+    helpfulPercentage: 0,
+    avgResolutionTime: 0
+  });
+  const [selectedSurvey, setSelectedSurvey] = useState(null);
+  const [showSurveyDetail, setShowSurveyDetail] = useState(false);
+
   // Helper function to generate PDF using PDF.co API
   const generatePDF = async (html, filename) => {
     try {
@@ -534,6 +545,30 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       showNotification("Failed to load dashboard data", "error");
+    }
+
+    // Fetch surveys separately - optional feature
+    try {
+      const token = localStorage.getItem('token');
+      
+      const surveysRes = await axios.get(`${API}/api/admin/surveys`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSurveys(surveysRes.data || []);
+
+      const surveyStatsRes = await axios.get(`${API}/api/admin/surveys/stats/overview`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSurveyStats(surveyStatsRes.data);
+    } catch (err) {
+      console.warn("Survey data not available yet. Please ensure the backend is up to date:", err.message);
+      setSurveys([]);
+      setSurveyStats({
+        totalSurveys: 0,
+        avgSatisfaction: 0,
+        helpfulPercentage: 0,
+        avgResolutionTime: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -625,6 +660,7 @@ export default function AdminDashboard() {
     { id: "complaints", name: "Complaint Management", icon: FaClipboardList, description: "Review and process citizen complaints" },
     { id: "solutions", name: "Solution Review", icon: FaLightbulb, description: "Verify user-submitted solutions" },
     { id: "documents", name: "Document Verification", icon: FaFileAlt, description: "Verify citizen documents" },
+    { id: "surveys", name: "Surveys", icon: FaStar, description: "View citizen satisfaction surveys" },
     { id: "settings", name: "System Settings", icon: FaCog, description: "Configure system parameters" },
     { id: "reports", name: "Reports", icon: FaFilePdf, description: "Generate and download reports" }
   ];
@@ -1232,6 +1268,283 @@ export default function AdminDashboard() {
             {/* Solutions Tab */}
             {activeTab === "solutions" && (
               <AdminSolutions />
+            )}
+
+            {/* Surveys Tab */}
+            {activeTab === "surveys" && (
+              <div className="space-y-6">
+                {/* Survey Statistics */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-100 mb-1">Total Surveys</p>
+                        <h3 className="text-3xl font-bold">{surveyStats.totalSurveys}</h3>
+                      </div>
+                      <FaStar className="text-5xl text-green-300/30" />
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-blue-100 mb-1">Avg Satisfaction</p>
+                        <h3 className="text-3xl font-bold">{surveyStats.avgSatisfaction.toFixed(1)} / 5</h3>
+                      </div>
+                      <FaStar className="text-5xl text-blue-300/30" />
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-purple-100 mb-1">Helpful Percentage</p>
+                        <h3 className="text-3xl font-bold">{surveyStats.helpfulPercentage}%</h3>
+                      </div>
+                      <FaCheckCircle className="text-5xl text-purple-300/30" />
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-orange-100 mb-1">Avg Resolution Time</p>
+                        <h3 className="text-3xl font-bold">{surveyStats.avgResolutionTime.toFixed(0)} days</h3>
+                      </div>
+                      <FaClock className="text-5xl text-orange-300/30" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Surveys List */}
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-600 to-green-700">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      <FaStar /> Survey Submissions
+                    </h2>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    {surveys.length === 0 ? (
+                      <div className="p-6 text-center text-gray-500">
+                        <FaStar className="inline text-4xl mb-2 text-gray-300" />
+                        <p>No surveys submitted yet</p>
+                      </div>
+                    ) : (
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Citizen</th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Department</th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Issue</th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Satisfaction</th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Helpful</th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Resolution Time</th>
+                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                            <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {surveys.map(survey => (
+                            <tr key={survey._id} className="border-b hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 text-sm">
+                                <div className="font-medium text-gray-900">{survey.userId?.name || 'Unknown'}</div>
+                                <div className="text-xs text-gray-500">{survey.userId?.email}</div>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{survey.department}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{survey.issueKeyword}</td>
+                              <td className="px-6 py-4 text-sm">
+                                <div className="flex items-center gap-1">
+                                  {[...Array(5)].map((_, i) => (
+                                    <FaStar
+                                      key={i}
+                                      className={i < survey.satisfaction ? "text-yellow-400" : "text-gray-300"}
+                                    />
+                                  ))}
+                                  <span className="ml-2 font-semibold">{survey.satisfaction}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-sm">
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  survey.helpful
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {survey.helpful ? 'Yes' : 'No'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-700">{survey.resolutionTime} days</td>
+                              <td className="px-6 py-4 text-sm text-gray-700">
+                                {new Date(survey.createdAt).toLocaleDateString()}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <button
+                                  onClick={() => {
+                                    setSelectedSurvey(survey);
+                                    setShowSurveyDetail(true);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                                >
+                                  <FaEye /> View
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+
+                {/* Survey Detail Modal */}
+                {showSurveyDetail && selectedSurvey && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-600 to-green-700 text-white sticky top-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-bold flex items-center gap-2">
+                            <FaStar /> Survey Details
+                          </h3>
+                          <button
+                            onClick={() => setShowSurveyDetail(false)}
+                            className="p-2 hover:bg-white/20 rounded-full"
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="p-6 space-y-6">
+                        {/* Citizen Info */}
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                            <FaUser className="text-blue-600" /> Citizen Information
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-600">Name</p>
+                              <p className="font-medium">{selectedSurvey.userId?.name}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Email</p>
+                              <p className="font-medium">{selectedSurvey.userId?.email}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">NID</p>
+                              <p className="font-medium">{selectedSurvey.userId?.nid || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Phone</p>
+                              <p className="font-medium">{selectedSurvey.userId?.phone || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Complaint Info */}
+                        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                          <h4 className="font-semibold text-yellow-900 mb-3 flex items-center gap-2">
+                            <FaClipboardList className="text-yellow-600" /> Complaint Information
+                          </h4>
+                          <div className="space-y-2 text-sm">
+                            <div>
+                              <p className="text-gray-600">Complaint Number</p>
+                              <p className="font-medium">{selectedSurvey.complaintId?.complaintNumber}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Department</p>
+                              <p className="font-medium">{selectedSurvey.department}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Issue Keyword</p>
+                              <p className="font-medium">{selectedSurvey.issueKeyword}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Survey Ratings */}
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                          <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                            <FaStar className="text-green-600" /> Satisfaction Rating
+                          </h4>
+                          <div className="space-y-3 text-sm">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span>Overall Satisfaction:</span>
+                                <div className="flex gap-1">
+                                  {[...Array(5)].map((_, i) => (
+                                    <FaStar
+                                      key={i}
+                                      className={i < selectedSurvey.satisfaction ? "text-yellow-400 text-lg" : "text-gray-300 text-lg"}
+                                    />
+                                  ))}
+                                </div>
+                                <span className="ml-auto font-bold text-lg">{selectedSurvey.satisfaction} / 5</span>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-gray-600 mb-1">Was the solution helpful?</p>
+                              <p className={`inline px-3 py-1 rounded-full font-medium text-sm ${
+                                selectedSurvey.helpful
+                                  ? 'bg-green-200 text-green-800'
+                                  : 'bg-red-200 text-red-800'
+                              }`}>
+                                {selectedSurvey.helpful ? '✓ Yes' : '✗ No'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Feedback */}
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                              <FaComment className="text-blue-600" /> Feedback
+                            </label>
+                            <div className="bg-gray-100 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">
+                              {selectedSurvey.feedback}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                              <FaLightbulb className="text-yellow-600" /> Solution Provided
+                            </label>
+                            <div className="bg-gray-100 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">
+                              {selectedSurvey.solution}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Timeline */}
+                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                          <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                            <FaCalendarAlt className="text-purple-600" /> Resolution Timeline
+                          </h4>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-600">Issue Date</p>
+                              <p className="font-medium">{new Date(selectedSurvey.issueDate).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Resolved Date</p>
+                              <p className="font-medium">{new Date(selectedSurvey.resolveDate).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Resolution Time</p>
+                              <p className="font-medium text-green-700">{selectedSurvey.resolutionTime} days</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Survey Date */}
+                        <div className="text-xs text-gray-500 text-center pt-4">
+                          Survey submitted on {new Date(selectedSurvey.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Settings Tab */}
