@@ -217,7 +217,16 @@ export default function UserNotifications() {
               {selectedNotification.type === 'appointment' && selectedNotification.userResponseStatus !== 'Declined' && selectedNotification.userResponseStatus !== 'Requested Reschedule' && (
                 <div className="mb-6 flex gap-2">
                   <button
-                    onClick={() => setAppointmentToReschedule(selectedNotification)}
+                    onClick={() => {
+                      // Transform notification to appointment format for modal
+                      const appointmentData = {
+                        _id: selectedNotification.appointmentId,
+                        appointmentDate: selectedNotification.date,
+                        appointmentTime: selectedNotification.time,
+                        location: selectedNotification.location
+                      };
+                      setAppointmentToReschedule(appointmentData);
+                    }}
                     className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition font-semibold flex items-center justify-center gap-2"
                   >
                     <FaCalendarAlt /> Request Reschedule
