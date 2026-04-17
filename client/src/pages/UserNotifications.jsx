@@ -214,7 +214,7 @@ export default function UserNotifications() {
               </div>
 
               {/* Request Reschedule Button */}
-              {selectedNotification.type === 'appointment' && selectedNotification.userResponseStatus === 'Accepted' && (
+              {selectedNotification.type === 'appointment' && selectedNotification.userResponseStatus !== 'Declined' && selectedNotification.userResponseStatus !== 'Requested Reschedule' && (
                 <div className="mb-6 flex gap-2">
                   <button
                     onClick={() => setAppointmentToReschedule(selectedNotification)}
