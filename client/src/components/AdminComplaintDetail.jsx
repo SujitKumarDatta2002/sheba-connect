@@ -10,7 +10,13 @@ import {
 } from "react-icons/fa";
 
 export default function AdminComplaintDetail({ complaint, onClose, onUpdate, showNotification }) {
-  const [complaintData, setComplaintData] = useState(complaint);
+  const [complaintData, setComplaintData] = useState({
+    ...complaint,
+    editHistory: complaint?.editHistory || [],
+    adminFeedback: complaint?.adminFeedback || [],
+    timeline: complaint?.timeline || []
+  });
+  const [appointments, setAppointments] = useState([]);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isQuestion, setIsQuestion] = useState(false);
   const [requiresResponse, setRequiresResponse] = useState(false);
@@ -19,6 +25,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
   const [adminResponse, setAdminResponse] = useState("");
   const [activeSection, setActiveSection] = useState("details");
   const [loading, setLoading] = useState(false);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [selectedEdit, setSelectedEdit] = useState(null);
   const [appointmentDate, setAppointmentDate] = useState("");
@@ -26,9 +33,14 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
   const [appointmentLocation, setAppointmentLocation] = useState("");
   const [appointmentPurpose, setAppointmentPurpose] = useState("");
   const [schedulingAppointment, setSchedulingAppointment] = useState(false);
+  const [isEditingComplaints, setIsEditingComplaints] = useState(false);
+  const [editedDescription, setEditedDescription] = useState("");
+  const [editedTemplate, setEditedTemplate] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     fetchComplaintDetails();
+    fetchAppointments();
   }, [complaint._id]);
 
   const fetchComplaintDetails = async () => {
@@ -39,7 +51,14 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
         `${API}/api/admin/complaints/${complaint._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setComplaintData(res.data);
+      // Ensure editHistory is always an array
+      const data = {
+        ...res.data,
+        editHistory: res.data.editHistory || [],
+        adminFeedback: res.data.adminFeedback || [],
+        timeline: res.data.timeline || []
+      };
+      setComplaintData(data);
     } catch (err) {
       console.error("Error fetching complaint details:", err);
     } finally {
@@ -47,6 +66,80 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
     }
   };
 
+  // const fetchAppointments = async () => {
+  //   setAppointmentsLoading(true);
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     const res = await axios.get(
+  //       `${API}/api/admin/complaints/${complaint._id}/appointments`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     setAppointments(res.data);
+  //   } catch (err) {
+  //     console.error("Error fetching complaint appointments:", err);
+  //     // If the endpoint doesn't exist (404) or fails, try the alternative endpoint
+  //     if (err.response?.status === 404) {
+  //       try {
+  //         const token = localStorage.getItem('token');
+  //         const res = await axios.get(
+  //           `${API}/api/complaints/${complaint._id}/appointments`,
+  //           { headers: { Authorization: `Bearer ${token}` } }
+  //         );
+  //         setAppointments(res.data);
+  //       } catch (fallbackErr) {
+  //         console.error("Error fetching appointments from fallback endpoint:", fallbackErr);
+  //         setAppointments([]);
+  //       }
+  //     } else {
+  //       setAppointments([]);
+  //     }
+  //   } finally {
+  //     setAppointmentsLoading(false);
+  //   }
+  // };
+const fetchAppointments = async () => {
+  // Only fetch if user is admin
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (user.role !== 'admin') {
+    console.log('Not admin, skipping appointments fetch');
+    setAppointments([]);
+    setAppointmentsLoading(false);
+    return;
+  }
+
+  setAppointmentsLoading(true);
+  try {
+    const token = localStorage.getItem('token');
+    
+    // Verify token exists
+    if (!token) {
+      console.error('No token found');
+      setAppointments([]);
+      return;
+    }
+
+    console.log('Fetching appointments for complaint:', complaint._id);
+    
+    const response = await axios.get(
+      `${API}/api/admin/complaints/${complaint._id}/appointments`,
+      { 
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
+    
+    setAppointments(response.data);
+  } catch (err) {
+    console.error("Error fetching appointments:", err);
+    console.error("Status:", err.response?.status);
+    console.error("Message:", err.response?.data?.message);
+    setAppointments([]);
+  } finally {
+    setAppointmentsLoading(false);
+  }
+};
   const updateStatus = async (newStatus) => {
     setUpdatingStatus(true);
     try {
@@ -161,6 +254,48 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
     }
   };
 
+  const handleAdminEditComplaint = async () => {
+    if (!editedDescription.trim() && !editedTemplate.trim()) {
+      showNotification("No changes made", "error");
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API}/api/admin/complaints/${complaint._id}`,
+        {
+          description: editedDescription || undefined,
+          formalTemplate: editedTemplate || undefined
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      showNotification("Complaint updated successfully", "success");
+      setIsEditingComplaints(false);
+      await fetchComplaintDetails();
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      console.error("Error updating complaint:", err);
+      showNotification(err.response?.data?.message || "Failed to update complaint", "error");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const startEditingComplaint = () => {
+    setEditedDescription(complaintData.description);
+    setEditedTemplate(complaintData.formalTemplate || "");
+    setIsEditingComplaints(true);
+  };
+
+  const cancelEditingComplaint = () => {
+    setIsEditingComplaints(false);
+    setEditedDescription("");
+    setEditedTemplate("");
+  };
+
   const scheduleAppointment = async () => {
     if (!appointmentDate || !appointmentTime || !appointmentLocation) {
       const msg = "Please fill in all required fields";
@@ -200,6 +335,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
       setAppointmentLocation("");
       setAppointmentPurpose("");
       await fetchComplaintDetails();
+      await fetchAppointments();
     } catch (err) {
       console.error("Error scheduling appointment:", err);
       const errorMsg = err.response?.data?.message || "Failed to schedule appointment. Please try again.";
@@ -245,6 +381,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
   }
 
   const unreviewedEdits = complaintData.editHistory?.filter(e => !e.reviewedByAdmin) || [];
+  const formatAppointmentDate = (date) => new Date(date).toLocaleDateString();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -348,51 +485,102 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
 
               {/* Complaint Details */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <FaFileAlt /> Complaint Details
-                </h3>
-                
-                <div className="mb-3">
-                  <p className="text-sm text-gray-500 mb-1">Department</p>
-                  <p className="font-medium">{complaintData.department}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <FaFileAlt /> Complaint Details
+                  </h3>
+                  {!isEditingComplaints && (
+                    <button
+                      onClick={startEditingComplaint}
+                      className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition"
+                    >
+                      <FaEdit /> Edit
+                    </button>
+                  )}
                 </div>
                 
-                <div className="mb-3">
-                  <p className="text-sm text-gray-500 mb-1">Issue Keyword</p>
-                  <p className="font-medium">{complaintData.issueKeyword}</p>
-                </div>
-                
-                <div className="mb-3">
-                  <p className="text-sm text-gray-500 mb-1">Priority</p>
-                  <p className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    complaintData.priority === 'high' ? 'bg-red-100 text-red-800' :
-                    complaintData.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {complaintData.priority?.toUpperCase()}
-                  </p>
-                </div>
-                
-                <div className="mb-3">
-                  <p className="text-sm text-gray-500 mb-1">Description</p>
-                  <div className="bg-white p-3 rounded-lg border">
-                    <p className="text-gray-700 whitespace-pre-wrap">{complaintData.description}</p>
-                  </div>
-                </div>
-                
-                {/* Official Government Format */}
-                {complaintData.formalTemplate && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-500 mb-2 flex items-center gap-2">
-                      <FaStamp className="text-blue-600" />
-                      Official Government Complaint Format
-                    </p>
-                    <div className="bg-white p-3 rounded-lg border max-h-64 overflow-y-auto">
-                      <pre className="text-gray-700 text-sm whitespace-pre-wrap font-mono">
-                        {complaintData.formalTemplate}
-                      </pre>
+                {isEditingComplaints ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-gray-700 font-medium block mb-1">Description</label>
+                      <textarea
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                        className="w-full border-2 border-gray-300 rounded p-3 focus:border-blue-500 focus:outline-none"
+                        rows="4"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-700 font-medium block mb-1">Official Format</label>
+                      <textarea
+                        value={editedTemplate}
+                        onChange={(e) => setEditedTemplate(e.target.value)}
+                        className="w-full border-2 border-gray-300 rounded p-3 focus:border-blue-500 focus:outline-none"
+                        rows="4"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={cancelEditingComplaint}
+                        className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAdminEditComplaint}
+                        disabled={savingEdit}
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {savingEdit ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                        Save Changes
+                      </button>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-500 mb-1">Department</p>
+                      <p className="font-medium">{complaintData.department}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-500 mb-1">Issue Keyword</p>
+                      <p className="font-medium">{complaintData.issueKeyword}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-500 mb-1">Priority</p>
+                      <p className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        complaintData.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        complaintData.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {complaintData.priority?.toUpperCase()}
+                      </p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-500 mb-1">Description</p>
+                      <div className="bg-white p-3 rounded-lg border">
+                        <p className="text-gray-700 whitespace-pre-wrap">{complaintData.description}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Official Government Format */}
+                    {complaintData.formalTemplate && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-500 mb-2 flex items-center gap-2">
+                          <FaStamp className="text-blue-600" />
+                          Official Government Complaint Format
+                        </p>
+                        <div className="bg-white p-3 rounded-lg border max-h-64 overflow-y-auto">
+                          <pre className="text-gray-700 text-sm whitespace-pre-wrap font-mono">
+                            {complaintData.formalTemplate}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -431,7 +619,7 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
           )}
 
           {/* Edit History Section */}
-          {activeSection === "edits" && (
+          {/* {activeSection === "edits" && (
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <FaHistory /> Edit History
@@ -525,8 +713,97 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
                 <p className="text-gray-500 text-center py-8">No edits have been made to this complaint.</p>
               )}
             </div>
-          )}
-
+          )} */}
+{/* Edit History Section */}
+{activeSection === "edits" && (
+  <div className="space-y-4">
+    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+      <FaHistory /> Edit History
+    </h3>
+    
+    {complaintData.editHistory && complaintData.editHistory.length > 0 ? (
+      <div className="space-y-4">
+        {complaintData.editHistory.map((edit, idx) => (
+          <div 
+            key={idx} 
+            className={`p-4 rounded-lg border ${
+              !edit.reviewedByAdmin ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200 bg-gray-50'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  Edited on {new Date(edit.editedAt).toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Status at edit: {edit.statusAtEdit}
+                </p>
+              </div>
+              {!edit.reviewedByAdmin && (
+                <span className="bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                  Pending Review
+                </span>
+              )}
+              {edit.reviewedByAdmin && (
+                <span className="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <FaCheckCircle size={10} /> Reviewed
+                </span>
+              )}
+            </div>
+            
+            <p className="text-sm text-gray-700 mb-3">
+              <span className="font-medium">Reason:</span> {edit.editReason || 'Not specified'}
+            </p>
+            
+            {edit.previousDescription && edit.newDescription && (
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div className="bg-red-50 p-3 rounded border border-red-200">
+                  <p className="text-xs font-bold text-red-700 mb-2">Previous Description:</p>
+                  <p className="text-sm text-gray-700">{edit.previousDescription}</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded border border-green-200">
+                  <p className="text-xs font-bold text-green-700 mb-2">New Description:</p>
+                  <p className="text-sm text-gray-700">{edit.newDescription}</p>
+                </div>
+              </div>
+            )}
+            
+            {edit.previousTemplate && edit.newTemplate && (
+              <div className="mt-3">
+                <details className="bg-gray-100 rounded">
+                  <summary className="p-2 cursor-pointer text-sm font-medium">
+                    View Template Changes
+                  </summary>
+                  <div className="p-3 space-y-2">
+                    <div className="bg-red-50 p-2 rounded">
+                      <p className="text-xs font-bold text-red-700 mb-1">Previous Template:</p>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap">{edit.previousTemplate?.substring(0, 300)}...</pre>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded">
+                      <p className="text-xs font-bold text-green-700 mb-1">New Template:</p>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap">{edit.newTemplate?.substring(0, 300)}...</pre>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            )}
+            
+            {!edit.reviewedByAdmin && (
+              <button
+                onClick={() => markEditAsReviewed(edit._id)}
+                className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition flex items-center gap-2"
+              >
+                <FaCheck /> Mark as Reviewed
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-gray-500 text-center py-8">No edit history available</p>
+    )}
+  </div>
+)}
           {/* Communication Section */}
           {activeSection === "communication" && (
             <div className="space-y-6">
@@ -649,11 +926,58 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
           {activeSection === "appointment" && (
             <div className="space-y-6">
               <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <FaCalendarAlt /> Schedule Appointment
+                <FaCalendarAlt /> Appointment Management
               </h3>
 
-              {/* Appointment Form */}
+              <div className="bg-white border rounded-lg p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-900">Scheduled Appointments</h4>
+                  <span className="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {appointments.length} total
+                  </span>
+                </div>
+
+                {appointmentsLoading ? (
+                  <div className="py-6 text-center text-gray-500">
+                    <FaSpinner className="animate-spin mx-auto mb-2" />
+                    Loading appointments...
+                  </div>
+                ) : appointments.length > 0 ? (
+                  <div className="space-y-3">
+                    {appointments.map((item) => (
+                      <div key={item._id} className="border rounded-lg p-4 bg-blue-50/40">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                          <p className="font-medium text-gray-900">
+                            {formatAppointmentDate(item.appointmentDate)} at {item.appointmentTime}
+                          </p>
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-white border text-gray-700">
+                            {item.status}
+                          </span>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-500">Location</p>
+                            <p className="font-medium text-gray-900">{item.location}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Citizen Response</p>
+                            <p className="font-medium text-gray-900">{item.userResponse?.status || "Pending response"}</p>
+                          </div>
+                          <div className="md:col-span-2">
+                            <p className="text-gray-500">Purpose</p>
+                            <p className="font-medium text-gray-900">{item.purpose || "Not provided"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No appointment has been scheduled for this complaint yet.</p>
+                )}
+              </div>
+
               <div className="bg-gray-50 p-6 rounded-lg border">
+                <h4 className="font-medium text-gray-900 mb-4">Schedule New Appointment</h4>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -725,10 +1049,9 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
                 </div>
               </div>
 
-              {/* Citizen Information for Appointment */}
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
-                  <FaUser /> Citizen Details
+                  <FaUser /> Citizen Details For Appointment
                 </h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>

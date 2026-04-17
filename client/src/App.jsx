@@ -125,10 +125,12 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboardNew from "./pages/AdminDashboardNew";
 import NearbyOffices from "./pages/NearbyOffices"; 
 import ServiceManagement from "./pages/admin/ServiceManagement";
-import ServiceApplication from "./pages/ServiceApplication";
+import UserNotifications from "./pages/UserNotifications";
 import Profile from "./pages/Profile";
+import ServiceApplication from "./pages/ServiceApplication";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -209,6 +211,16 @@ function App() {
           }
         />
 
+        {/* User Notifications Route */}
+        <Route
+          path="/notifications"
+          element={
+            <PrivateRoute>
+              <UserNotifications />
+            </PrivateRoute>
+          }
+        />
+
         {/* Admin Dashboard Route */}
         <Route
           path="/admin"
@@ -219,25 +231,15 @@ function App() {
           }
         />
 
-          {/* Admin Dashboard Route */}
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute>
-                <AdminDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          {/* Service Management Route */}
-          <Route
-            path="/admin/services"
-            element={
-              <PrivateRoute>
-                <ServiceManagement />
-              </PrivateRoute>
-            }
-          />
+        {/* Service Management Route */}
+        <Route
+          path="/admin/services"
+          element={
+            <PrivateRoute>
+              <ServiceManagement />
+            </PrivateRoute>
+          }
+        />
 
         {/* Profile Route */}
         <Route
