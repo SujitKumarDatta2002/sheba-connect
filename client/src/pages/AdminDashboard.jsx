@@ -1100,13 +1100,20 @@ export default function AdminDashboard() {
                             <p className="text-xs text-gray-500 truncate max-w-xs">{complaint.description?.substring(0, 50)}...</p>
                            </td>
                           <td className="p-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              complaint.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                              complaint.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {complaint.status}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                complaint.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                                complaint.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {complaint.status}
+                              </span>
+                              {complaint.editHistory && complaint.editHistory.some(e => !e.reviewedByAdmin) && (
+                                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">
+                                  📝 Edits
+                                </span>
+                              )}
+                            </div>
                            </td>
                           <td className="p-4">
                             <span className={`px-2 py-1 rounded text-xs ${

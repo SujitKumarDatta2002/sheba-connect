@@ -22,6 +22,7 @@ export default function Complaints() {
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditSuccessModal, setShowEditSuccessModal] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
   // Edit form state
@@ -35,6 +36,10 @@ export default function Complaints() {
   const [feedbackResponse, setFeedbackResponse] = useState("");
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [sendingResponse, setSendingResponse] = useState(false);
+
+  // Appointment response state
+  const [respondingToAppointment, setRespondingToAppointment] = useState(null);
+  const [appointmentResponseType, setAppointmentResponseType] = useState(null);
 
   useEffect(() => {
     fetchComplaints();
@@ -133,8 +138,9 @@ export default function Complaints() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      showNotification("Complaint updated successfully", "success");
       closeEditModal();
+      setShowEditSuccessModal(true);
+      setTimeout(() => setShowEditSuccessModal(false), 3000);
       fetchComplaints();
     } catch (err) {
       console.error("Error editing complaint:", err);
@@ -166,6 +172,24 @@ export default function Complaints() {
       showNotification("Failed to send response", "error");
     } finally {
       setSendingResponse(false);
+    }
+  };
+
+  const handleRespondToAppointment = async (appointmentId, responseStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API}/api/appointments/${appointmentId}/respond`,
+        { status: responseStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      showNotification(`Appointment ${responseStatus.toLowerCase()}ed successfully`, "success");
+      setRespondingToAppointment(null);
+      fetchUserAppointments();
+    } catch (err) {
+      console.error("Error responding to appointment:", err);
+      showNotification("Failed to respond to appointment", "error");
     }
   };
 
@@ -543,6 +567,32 @@ export default function Complaints() {
     );
   };
 
+  // Edit Success Modal Component
+  const EditSuccessModal = () => {
+    if (!showEditSuccessModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-in">
+        <div className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-md w-full">
+          <div className="mb-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <FaCheckCircle className="text-4xl text-green-600" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Complaint Updated!</h2>
+          <p className="text-gray-600 mb-2">Your complaint has been successfully updated.</p>
+          <p className="text-sm text-gray-500">The admin will review your changes.</p>
+          <button
+            onClick={() => setShowEditSuccessModal(false)}
+            className="mt-6 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -710,6 +760,39 @@ export default function Complaints() {
                           {appointment.status || "Pending"}
                         </span>
                       </p>
+                      {appointment.status !== 'Completed' && appointment.status !== 'Cancelled' && (
+                        <div className="mt-4 flex gap-2">
+                          {respondingToAppointment === appointment._id ? (
+                            <>
+                              <button
+                                onClick={() => handleRespondToAppointment(appointment._id, 'Accepted')}
+                                className="flex-1 bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 transition flex items-center justify-center gap-1"
+                              >
+                                <FaCheck /> Accept
+                              </button>
+                              <button
+                                onClick={() => handleRespondToAppointment(appointment._id, 'Declined')}
+                                className="flex-1 bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600 transition flex items-center justify-center gap-1"
+                              >
+                                <FaTimes /> Decline
+                              </button>
+                              <button
+                                onClick={() => setRespondingToAppointment(null)}
+                                className="bg-gray-500 text-white px-3 py-2 rounded text-sm hover:bg-gray-600 transition"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setRespondingToAppointment(appointment._id)}
+                              className="w-full bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600 transition flex items-center justify-center gap-1"
+                            >
+                              <FaReply /> Respond to Appointment
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -778,6 +861,7 @@ export default function Complaints() {
       {/* Modals */}
       <DetailModal />
       <EditModal />
+      <EditSuccessModal />
     </div>
   );
 }
