@@ -2308,19 +2308,36 @@ export default function AdminDashboard() {
   };
 
   // Only allow role updates for citizen users (not admins)
-  const updateUserRole = async (userId, newRole) => {
-    const targetUser = users.find(u => u._id === userId);
-    if (targetUser?.role === 'admin') {
-      showNotification("Admin roles cannot be modified", "error");
-      return;
-    }
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put(`${API}/api/admin/users/${userId}/role`, { role: newRole }, { headers: { Authorization: `Bearer ${token}` } });
-      showNotification(`User role updated to ${newRole}`, "success");
-      fetchDashboardData();
-    } catch { showNotification("Failed to update user role", "error"); }
-  };
+  // const updateUserRole = async (userId, newRole) => {
+  //   const targetUser = users.find(u => u._id === userId);
+  //   if (targetUser?.role === 'admin') {
+  //     showNotification("Admin roles cannot be modified", "error");
+  //     return;
+  //   }
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     await axios.put(`${API}/api/admin/users/${userId}/role`, { role: newRole }, { headers: { Authorization: `Bearer ${token}` } });
+  //     showNotification(`User role updated to ${newRole}`, "success");
+  //     fetchDashboardData();
+  //   } catch { showNotification("Failed to update user role", "error"); }
+  // };
+// Update user role - allows admin to make citizen an admin or vice versa
+const updateUserRole = async (userId, newRole) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.put(
+      `${API}/api/admin/users/${userId}/role`,
+      { role: newRole },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    showNotification(`User role updated to ${newRole} successfully`, "success");
+    fetchDashboardData(); // Refresh the user list
+  } catch (err) {
+    console.error("Error updating user role:", err);
+    showNotification(err.response?.data?.message || "Failed to update user role", "error");
+  }
+};
 
   // Only allow deletion of citizen users (not admins)
   const deleteUser = async (userId) => {
@@ -3672,7 +3689,7 @@ export default function AdminDashboard() {
           )}
 
           {/* ── USERS (CITIZENS ONLY) ────────────────────────────────────── */}
-          {activeTab === "users" && (
+          {/* {activeTab === "users" && (
             <div className="sc-card">
               <div className="sc-card-header">
                 <span className="sc-section-title"><FaUsers className="text-blue-500" /> Citizen Management</span>
@@ -3745,8 +3762,97 @@ export default function AdminDashboard() {
                 </table>
               </div>
             </div>
-          )}
-
+          )} */}
+{activeTab === "users" && (
+  <div className="sc-card">
+    <div className="sc-card-header">
+      <span className="sc-section-title"><FaUsers className="text-blue-500" /> Citizen Management</span>
+      <div className="flex items-center gap-3">
+        <button onClick={generateAllUsersReport} disabled={generating} className="sc-btn-ghost text-xs">
+          {generating ? <FaSpinner className="animate-spin" /> : <FaDownload />} Export All
+        </button>
+        <div className="relative">
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+          <input
+            type="text" placeholder="Search citizens…" value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="sc-input pl-8 w-64 text-sm"
+          />
+        </div>
+      </div>
+    </div>
+    <div className="overflow-x-auto">
+      <table className="w-full sc-table">
+        <thead>
+          <tr>
+            <th className="text-left">Citizen</th>
+            <th className="text-left">Contact</th>
+            <th className="text-left">NID</th>
+            <th className="text-left">Role</th>
+            <th className="text-left">Joined</th>
+            <th className="text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredUsers.map(user => (
+            <tr key={user._id}>
+              <td>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-sm flex items-center justify-center flex-shrink-0">
+                    {user.name?.[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800">{user.name}</p>
+                    <p className="text-xs text-slate-400">{user.email}</p>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <p className="text-sm">{user.phone}</p>
+                <p className="text-xs text-slate-400 truncate max-w-[180px]">{user.address}</p>
+              </td>
+              <td className="font-mono text-xs text-slate-600">{user.nid}</td>
+              <td>
+                <select
+                  value={user.role}
+                  onChange={(e) => updateUserRole(user._id, e.target.value)}
+                  className={`px-3 py-1 rounded-lg text-sm font-semibold border cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    user.role === 'admin' 
+                      ? 'bg-purple-100 text-purple-800 border-purple-300' 
+                      : 'bg-blue-100 text-blue-800 border-blue-300'
+                  }`}
+                >
+                  <option value="citizen">Citizen</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </td>
+              <td className="text-xs text-slate-500">{new Date(user.createdAt).toLocaleDateString()}</td>
+              <td>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => { setSelectedUserForReport(user); setShowUserReportModal(true); }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-blue-500 hover:bg-blue-50 transition"
+                    title="Generate Report"
+                  ><FaFilePdf size={13} /></button>
+                  {user.role !== 'admin' && (
+                    <button
+                      onClick={() => deleteUser(user._id)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition"
+                      title="Delete User"
+                    ><FaTrash size={12} /></button>
+                  )}
+                  {user.role === 'admin' && (
+                    <span className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">System Admin</span>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
           {/* ── COMPLAINTS ───────────────────────────────────────────── */}
           {activeTab === "complaints" && (
             <div className="sc-card">
