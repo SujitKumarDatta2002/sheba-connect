@@ -73,6 +73,7 @@ const appointmentSchema = new mongoose.Schema(
       },
       proposedDate: Date,
       proposedTime: String,
+      proposedLocation: String,
       reason: String,
       status: {
         type: String,

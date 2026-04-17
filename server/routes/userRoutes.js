@@ -94,7 +94,7 @@ router.put('/appointments/:id/respond', async (req, res) => {
 // User request reschedule
 router.post('/appointments/:id/reschedule-request', async (req, res) => {
   try {
-    const { proposedDate, proposedTime, reason } = req.body;
+    const { proposedDate, proposedTime, proposedLocation, reason } = req.body;
 
     const appointment = await Appointment.findOne({
       _id: req.params.id,
@@ -105,13 +105,14 @@ router.post('/appointments/:id/reschedule-request', async (req, res) => {
       return res.status(404).json({ message: 'Appointment not found' });
     }
 
-    if (!proposedDate || !proposedTime) {
-      return res.status(400).json({ message: 'Proposed date and time are required' });
+    if (!proposedDate || !proposedTime || !proposedLocation) {
+      return res.status(400).json({ message: 'Proposed date, time, and location are required' });
     }
 
     appointment.rescheduleRequests.push({
       proposedDate: new Date(proposedDate),
       proposedTime,
+      proposedLocation,
       reason: reason || 'User not available',
       status: 'Pending',
       requestedAt: new Date()
@@ -329,9 +330,10 @@ router.put('/appointments/:appointmentId/reschedule-request/:requestId/approve',
       return res.status(404).json({ message: 'Reschedule request not found' });
     }
 
-    // Update appointment with new date/time
+    // Update appointment with new date/time/location
     appointment.appointmentDate = request.proposedDate;
     appointment.appointmentTime = request.proposedTime;
+    appointment.location = request.proposedLocation;
     appointment.status = 'Rescheduled';
 
     // Mark request as approved

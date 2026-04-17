@@ -6,6 +6,7 @@ import {
   FaCheckCircle, FaTimesCircle, FaClock, FaExclamationCircle,
   FaChevronDown, FaReply, FaArrowLeft
 } from "react-icons/fa";
+import RequestRescheduleModal from "../components/RequestRescheduleModal";
 
 export default function UserNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -13,6 +14,7 @@ export default function UserNotifications() {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [filter, setFilter] = useState("all"); // all, unread, feedback, appointments
   const [unreadCount, setUnreadCount] = useState(0);
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -211,6 +213,18 @@ export default function UserNotifications() {
                 </span>
               </div>
 
+              {/* Request Reschedule Button */}
+              {selectedNotification.type === 'appointment' && selectedNotification.userResponseStatus === 'Accepted' && (
+                <div className="mb-6 flex gap-2">
+                  <button
+                    onClick={() => setAppointmentToReschedule(selectedNotification)}
+                    className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition font-semibold flex items-center justify-center gap-2"
+                  >
+                    <FaCalendarAlt /> Request Reschedule
+                  </button>
+                </div>
+              )}
+
               {/* Reschedule Requests */}
               {selectedNotification.rescheduleRequests && selectedNotification.rescheduleRequests.length > 0 && (
                 <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
@@ -231,6 +245,10 @@ export default function UserNotifications() {
                             <p className="text-xs text-gray-600 font-semibold">Proposed Time</p>
                             <p className="font-semibold text-purple-900">{req.proposedTime}</p>
                           </div>
+                        </div>
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-600 font-semibold">Proposed Location</p>
+                          <p className="font-semibold text-purple-900">{req.proposedLocation}</p>
                         </div>
                         <p className="text-sm text-gray-600 mb-3">
                           <strong>Reason:</strong> {req.reason}
@@ -418,6 +436,18 @@ export default function UserNotifications() {
           </div>
         )}
       </div>
+
+      {/* Request Reschedule Modal */}
+      <RequestRescheduleModal
+        appointment={appointmentToReschedule}
+        isOpen={!!appointmentToReschedule}
+        onClose={() => setAppointmentToReschedule(null)}
+        onSuccess={() => {
+          fetchNotifications();
+          setAppointmentToReschedule(null);
+          setSelectedNotification(null);
+        }}
+      />
     </div>
   );
 }
