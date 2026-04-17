@@ -10,7 +10,12 @@ import {
 } from "react-icons/fa";
 
 export default function AdminComplaintDetail({ complaint, onClose, onUpdate, showNotification }) {
-  const [complaintData, setComplaintData] = useState(complaint);
+  const [complaintData, setComplaintData] = useState({
+    ...complaint,
+    editHistory: complaint?.editHistory || [],
+    adminFeedback: complaint?.adminFeedback || [],
+    timeline: complaint?.timeline || []
+  });
   const [appointments, setAppointments] = useState([]);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isQuestion, setIsQuestion] = useState(false);
@@ -42,7 +47,14 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
         `${API}/api/admin/complaints/${complaint._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setComplaintData(res.data);
+      // Ensure editHistory is always an array
+      const data = {
+        ...res.data,
+        editHistory: res.data.editHistory || [],
+        adminFeedback: res.data.adminFeedback || [],
+        timeline: res.data.timeline || []
+      };
+      setComplaintData(data);
     } catch (err) {
       console.error("Error fetching complaint details:", err);
     } finally {

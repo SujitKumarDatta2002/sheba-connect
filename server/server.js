@@ -191,6 +191,10 @@ app.use("/api/complaints", complaintRoutes);
 const adminRoutes = require("./routes/adminRoutes");
 app.use("/api/admin", adminRoutes);
 
+// Appointment routes
+const appointmentRoutes = require("./routes/appointmentRoutes");
+app.use("/api", appointmentRoutes);
+
 // AI routes
 app.use("/api/ai", aiRoutes);
 

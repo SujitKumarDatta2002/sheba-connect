@@ -163,7 +163,7 @@ router.get('/admin/appointments', authMiddleware, async (req, res) => {
 });
 
 // Get appointments for a specific complaint (Admin only)
-router.get('/api/admin/complaints/:complaintId/appointments', authMiddleware, async (req, res) => {
+router.get('/admin/complaints/:complaintId/appointments', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -182,7 +182,7 @@ router.get('/api/admin/complaints/:complaintId/appointments', authMiddleware, as
 });
 
 // Update appointment (Admin only)
-router.put('/api/admin/appointments/:id', authMiddleware, async (req, res) => {
+router.put('/admin/appointments/:id', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -213,7 +213,7 @@ router.put('/api/admin/appointments/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete appointment (Admin only)
-router.delete('/api/admin/appointments/:id', authMiddleware, async (req, res) => {
+router.delete('/admin/appointments/:id', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
