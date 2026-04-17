@@ -443,27 +443,105 @@ router.get('/:id/appointments', authMiddleware, async (req, res) => {
 });
 
 // CREATE a new complaint
+// router.post('/create', authMiddleware, async (req, res) => {
+//   try {
+//     console.log("Received complaint data:", req.body);
+//     console.log("Request headers:", req.headers);
+//     console.log("Auth user:", req.user);
+    
+//     // Validate required fields
+//     const requiredFields = ['department', 'issueKeyword', 'description', 'citizenName', 'citizenId', 'contactNumber'];
+//     const missingFields = [];
+//     for (const field of requiredFields) {
+//       if (!req.body[field]) {
+//         missingFields.push(field);
+//       }
+//     }
+    
+//     if (missingFields.length > 0) {
+//       console.error("Missing required fields:", missingFields);
+//       return res.status(400).json({ 
+//         message: `Missing required fields: ${missingFields.join(', ')}`,
+//         receivedFields: Object.keys(req.body)
+//       });
+//     }
+
+//     const timeline = [
+//       {
+//         status: "Pending",
+//         comment: "Complaint submitted successfully",
+//         updatedBy: req.body.citizenName,
+//         date: new Date()
+//       }
+//     ];
+
+//     const complaintData = {
+//       userId: req.user.userId,
+//       citizenName: req.body.citizenName,
+//       citizenId: req.body.citizenId,
+//       contactNumber: req.body.contactNumber,
+//       email: req.body.email || "",
+//       address: req.body.address || "",
+//       department: req.body.department,
+//       issueKeyword: req.body.issueKeyword,
+//       description: req.body.description,
+//       priority: req.body.priority || "medium",
+//       status: "Pending",
+//       timeline: timeline,
+//       formalTemplate: req.body.formalTemplate || ""
+//     };
+
+//     console.log("Creating complaint with data:", complaintData);
+
+//     const complaint = new Complaint(complaintData);
+//     const savedComplaint = await complaint.save();
+    
+//     console.log("Complaint saved successfully:", savedComplaint._id);
+//     res.status(201).json(savedComplaint);
+    
+//   } catch (error) {
+//     console.error('Error creating complaint:', error);
+//     res.status(400).json({ message: error.message });
+//   }
+// });
+
+// CREATE a new complaint
 router.post('/create', authMiddleware, async (req, res) => {
   try {
     console.log("Received complaint data:", req.body);
-    console.log("Request headers:", req.headers);
-    console.log("Auth user:", req.user);
     
     // Validate required fields
     const requiredFields = ['department', 'issueKeyword', 'description', 'citizenName', 'citizenId', 'contactNumber'];
-    const missingFields = [];
     for (const field of requiredFields) {
-      if (!req.body[field]) {
-        missingFields.push(field);
+      if (!req.body[field] || (typeof req.body[field] === 'string' && req.body[field].trim() === '')) {
+        return res.status(400).json({ message: `Missing required field: ${field}` });
       }
     }
-    
-    if (missingFields.length > 0) {
-      console.error("Missing required fields:", missingFields);
-      return res.status(400).json({ 
-        message: `Missing required fields: ${missingFields.join(', ')}`,
-        receivedFields: Object.keys(req.body)
-      });
+
+    // Generate unique complaint number
+    const generateComplaintNumber = () => {
+      const now = new Date();
+      const year = now.getFullYear().toString().slice(-2);
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      return `CMP${year}${month}${day}${random}`;
+    };
+
+    let complaintNumber = generateComplaintNumber();
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    // Ensure uniqueness
+    while (!isUnique && attempts < maxAttempts) {
+      const existing = await Complaint.findOne({ complaintNumber });
+      if (!existing) {
+        isUnique = true;
+      } else {
+        complaintNumber = generateComplaintNumber();
+        attempts++;
+      }
     }
 
     const timeline = [
@@ -477,16 +555,17 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     const complaintData = {
       userId: req.user.userId,
-      citizenName: req.body.citizenName,
-      citizenId: req.body.citizenId,
-      contactNumber: req.body.contactNumber,
-      email: req.body.email || "",
-      address: req.body.address || "",
+      citizenName: req.body.citizenName.trim(),
+      citizenId: req.body.citizenId.trim(),
+      contactNumber: req.body.contactNumber.trim(),
+      email: req.body.email?.trim() || "",
+      address: req.body.address?.trim() || "",
       department: req.body.department,
-      issueKeyword: req.body.issueKeyword,
-      description: req.body.description,
+      issueKeyword: req.body.issueKeyword.trim(),
+      description: req.body.description.trim(),
       priority: req.body.priority || "medium",
       status: "Pending",
+      complaintNumber: complaintNumber,
       timeline: timeline,
       formalTemplate: req.body.formalTemplate || ""
     };
@@ -501,9 +580,15 @@ router.post('/create', authMiddleware, async (req, res) => {
     
   } catch (error) {
     console.error('Error creating complaint:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Duplicate complaint number. Please try again.' });
+    }
+    
     res.status(400).json({ message: error.message });
   }
 });
+
 
 // UPDATE complaint - Citizen edit with tracking
 router.put('/:id', authMiddleware, async (req, res) => {
