@@ -162,6 +162,54 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleApproveReschedule = async (appointmentId, requestId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API}/api/users/appointments/${appointmentId}/reschedule-request/${requestId}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      showNotification("Reschedule request approved!", "success");
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Error approving reschedule:', err);
+      showNotification("Failed to approve reschedule request", "error");
+    }
+  };
+
+  const handleRejectReschedule = async (appointmentId, requestId, reason) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API}/api/users/appointments/${appointmentId}/reschedule-request/${requestId}/reject`,
+        { reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      showNotification("Reschedule request rejected", "success");
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Error rejecting reschedule:', err);
+      showNotification("Failed to reject reschedule request", "error");
+    }
+  };
+
+  const updateAppointmentStatus = async (appointmentId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API}/api/admin/appointments/${appointmentId}`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      showNotification(`Appointment marked as ${newStatus}`, "success");
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Error updating appointment status:', err);
+      showNotification("Failed to update appointment status", "error");
+    }
+  };
+
   // ============================================
   // UI COMPONENTS
   // ============================================
@@ -279,22 +327,44 @@ export default function AdminDashboard() {
           </p>
         </div>
       )}
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => {
-            setSelectedComplaint(appointment);
-            setShowAppointmentModal(true);
-          }}
-          className="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600 transition"
-        >
-          <FaEdit className="inline mr-1" /> Edit
-        </button>
-        <button
-          onClick={() => deleteAppointment(appointment._id)}
-          className="bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600 transition"
-        >
-          <FaTrash />
-        </button>
+      <div className="mt-3 space-y-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setSelectedComplaint(appointment);
+              setShowAppointmentModal(true);
+            }}
+            className="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600 transition"
+          >
+            <FaEdit className="inline mr-1" /> Edit
+          </button>
+          <button
+            onClick={() => deleteAppointment(appointment._id)}
+            className="bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600 transition"
+          >
+            <FaTrash />
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => updateAppointmentStatus(appointment._id, 'Approved')}
+            className="flex-1 bg-green-500 text-white px-3 py-2 rounded text-xs hover:bg-green-600 transition font-semibold"
+          >
+            <FaCheck className="inline mr-1" size={12} /> Approved
+          </button>
+          <button
+            onClick={() => updateAppointmentStatus(appointment._id, 'Attended')}
+            className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-xs hover:bg-blue-700 transition font-semibold"
+          >
+            <FaCheckDouble className="inline mr-1" size={12} /> Attended
+          </button>
+          <button
+            onClick={() => updateAppointmentStatus(appointment._id, 'Rejected')}
+            className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-xs hover:bg-red-700 transition font-semibold"
+          >
+            <FaTimes className="inline mr-1" size={12} /> Rejected
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -493,6 +563,68 @@ export default function AdminDashboard() {
                               <p className="text-gray-900">{appointment.purpose || 'Not provided'}</p>
                             </div>
                           </div>
+
+                          {/* Reschedule Requests */}
+                          {appointment.rescheduleRequests && appointment.rescheduleRequests.length > 0 && (
+                            <div className="mt-4 pt-3 border-t border-blue-200">
+                              <p className="text-xs font-bold text-purple-900 mb-2 flex items-center gap-1">
+                                <FaClock size={12} /> Reschedule Requests
+                              </p>
+                              <div className="space-y-2">
+                                {appointment.rescheduleRequests.map((req, idx) => (
+                                  <div key={idx} className="bg-white p-2 rounded border border-purple-200">
+                                    <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                                      <div>
+                                        <p className="font-bold text-gray-600">Proposed Date</p>
+                                        <p className="text-gray-900">{new Date(req.proposedDate).toLocaleDateString()}</p>
+                                      </div>
+                                      <div>
+                                        <p className="font-bold text-gray-600">Proposed Time</p>
+                                        <p className="text-gray-900">{req.proposedTime}</p>
+                                      </div>
+                                      <div className="col-span-2">
+                                        <p className="font-bold text-gray-600">Proposed Location</p>
+                                        <p className="text-gray-900">{req.proposedLocation}</p>
+                                      </div>
+                                    </div>
+                                    <p className="text-xs text-gray-700 mb-2"><strong>Reason:</strong> {req.reason}</p>
+                                    
+                                    <span className={`inline-block px-2 py-1 rounded text-xs font-bold mb-2 ${
+                                      req.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      req.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                      'bg-red-100 text-red-800'
+                                    }`}>
+                                      {req.status}
+                                    </span>
+
+                                    {req.status === 'Pending' && (
+                                      <div className="flex gap-2 mt-2">
+                                        <button
+                                          onClick={() => handleApproveReschedule(appointment._id, req._id)}
+                                          className="flex-1 bg-green-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-green-700 transition flex items-center justify-center gap-1"
+                                        >
+                                          <FaCheck size={12} /> Approve
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            const reason = prompt('Enter reason for rejection:');
+                                            if (reason) handleRejectReschedule(appointment._id, req._id, reason);
+                                          }}
+                                          className="flex-1 bg-red-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-red-700 transition flex items-center justify-center gap-1"
+                                        >
+                                          <FaTimes size={12} /> Reject
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {req.status !== 'Pending' && (
+                                      <p className="text-xs text-gray-600 italic mt-2">{req.adminResponse}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

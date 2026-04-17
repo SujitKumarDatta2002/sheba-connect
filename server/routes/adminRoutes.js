@@ -1283,7 +1283,7 @@ router.get('/appointments/:id', async (req, res) => {
 // Update appointment (admin edits details)
 router.put('/appointments/:id', async (req, res) => {
   try {
-    const { appointmentDate, appointmentTime, location, purpose, notes, outcome, followUpRequired, followUpNotes } = req.body;
+    const { appointmentDate, appointmentTime, location, purpose, notes, outcome, followUpRequired, followUpNotes, status } = req.body;
 
     const appointment = await Appointment.findByIdAndUpdate(
       req.params.id,
@@ -1295,7 +1295,8 @@ router.put('/appointments/:id', async (req, res) => {
         notes,
         outcome,
         followUpRequired,
-        followUpNotes
+        followUpNotes,
+        status
       },
       { new: true, runValidators: true }
     ).populate(['userId', 'adminId', 'complaintId']);

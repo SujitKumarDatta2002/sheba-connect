@@ -226,6 +226,7 @@ export default function UserNotifications() {
                         location: selectedNotification.location
                       };
                       setAppointmentToReschedule(appointmentData);
+                      setSelectedNotification(null); // Close detail view so modal shows on top
                     }}
                     className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition font-semibold flex items-center justify-center gap-2"
                   >
