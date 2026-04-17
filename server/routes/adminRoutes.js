@@ -944,6 +944,47 @@ router.put('/complaints/:id/status', async (req, res) => {
   }
 });
 
+// Update complaint details (admin only)
+router.put('/complaints/:id', async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { description, formalTemplate } = req.body;
+    const complaint = await Complaint.findById(req.params.id);
+
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    // Update fields if provided
+    if (description && description.trim()) {
+      complaint.description = description;
+    }
+    if (formalTemplate && formalTemplate.trim()) {
+      complaint.formalTemplate = formalTemplate;
+    }
+
+    // Add to timeline
+    if (!Array.isArray(complaint.timeline)) {
+      complaint.timeline = [];
+    }
+    complaint.timeline.push({
+      status: complaint.status,
+      comment: 'Complaint updated by admin',
+      updatedBy: 'Admin',
+      date: new Date()
+    });
+
+    await complaint.save();
+    res.json(complaint);
+  } catch (error) {
+    console.error('Error updating complaint:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Mark edit as reviewed
 router.put('/complaints/:id/edits/:editId/review', async (req, res) => {
   try {

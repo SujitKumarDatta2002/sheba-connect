@@ -446,13 +446,24 @@ router.get('/:id/appointments', authMiddleware, async (req, res) => {
 router.post('/create', authMiddleware, async (req, res) => {
   try {
     console.log("Received complaint data:", req.body);
+    console.log("Request headers:", req.headers);
+    console.log("Auth user:", req.user);
     
     // Validate required fields
     const requiredFields = ['department', 'issueKeyword', 'description', 'citizenName', 'citizenId', 'contactNumber'];
+    const missingFields = [];
     for (const field of requiredFields) {
       if (!req.body[field]) {
-        return res.status(400).json({ message: `Missing required field: ${field}` });
+        missingFields.push(field);
       }
+    }
+    
+    if (missingFields.length > 0) {
+      console.error("Missing required fields:", missingFields);
+      return res.status(400).json({ 
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+        receivedFields: Object.keys(req.body)
+      });
     }
 
     const timeline = [

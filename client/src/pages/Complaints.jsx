@@ -4643,6 +4643,8 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
         }
       ];
 
+      const token = localStorage.getItem('token');
+
       const complaintData = {
         userId: currentUser?._id,
         citizenName: formData.citizenName,
@@ -4659,7 +4661,9 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
         formalTemplate: editedTemplate
       };
 
-      const token = localStorage.getItem('token');
+      console.log("Sending complaint data:", complaintData);
+      console.log("Token available:", !!token);
+      console.log("Current user:", currentUser);
       const res = await axios.post(
         `${API}/api/complaints/create`, 
         complaintData,
@@ -4692,12 +4696,17 @@ ${lang === "en" ? "NID" : "এনআইডি"}: ${userData.citizenId}
       
     } catch (error) {
       console.error("Error details:", error);
+      console.error("Full error response:", error.response);
       
       if (error.response) {
-        alert(`Server error: ${error.response.data.message || JSON.stringify(error.response.data)}`);
+        const errorMessage = error.response.data.message || JSON.stringify(error.response.data);
+        console.error("Server error message:", errorMessage);
+        alert(`Server error (${error.response.status}): ${errorMessage}`);
       } else if (error.request) {
+        console.error("No response from server:", error.request);
         alert("Server is not responding. Please check if the backend is running on port 5000");
       } else {
+        console.error("Request error:", error.message);
         alert(`Error: ${error.message}`);
       }
     }

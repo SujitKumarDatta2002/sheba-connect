@@ -33,6 +33,10 @@ export default function AdminComplaintDetail({ complaint, onClose, onUpdate, sho
   const [appointmentLocation, setAppointmentLocation] = useState("");
   const [appointmentPurpose, setAppointmentPurpose] = useState("");
   const [schedulingAppointment, setSchedulingAppointment] = useState(false);
+  const [isEditingComplaints, setIsEditingComplaints] = useState(false);
+  const [editedDescription, setEditedDescription] = useState("");
+  const [editedTemplate, setEditedTemplate] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     fetchComplaintDetails();
@@ -250,6 +254,48 @@ const fetchAppointments = async () => {
     }
   };
 
+  const handleAdminEditComplaint = async () => {
+    if (!editedDescription.trim() && !editedTemplate.trim()) {
+      showNotification("No changes made", "error");
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API}/api/admin/complaints/${complaint._id}`,
+        {
+          description: editedDescription || undefined,
+          formalTemplate: editedTemplate || undefined
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      showNotification("Complaint updated successfully", "success");
+      setIsEditingComplaints(false);
+      await fetchComplaintDetails();
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      console.error("Error updating complaint:", err);
+      showNotification(err.response?.data?.message || "Failed to update complaint", "error");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const startEditingComplaint = () => {
+    setEditedDescription(complaintData.description);
+    setEditedTemplate(complaintData.formalTemplate || "");
+    setIsEditingComplaints(true);
+  };
+
+  const cancelEditingComplaint = () => {
+    setIsEditingComplaints(false);
+    setEditedDescription("");
+    setEditedTemplate("");
+  };
+
   const scheduleAppointment = async () => {
     if (!appointmentDate || !appointmentTime || !appointmentLocation) {
       const msg = "Please fill in all required fields";
@@ -439,51 +485,102 @@ const fetchAppointments = async () => {
 
               {/* Complaint Details */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <FaFileAlt /> Complaint Details
-                </h3>
-                
-                <div className="mb-3">
-                  <p className="text-sm text-gray-500 mb-1">Department</p>
-                  <p className="font-medium">{complaintData.department}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <FaFileAlt /> Complaint Details
+                  </h3>
+                  {!isEditingComplaints && (
+                    <button
+                      onClick={startEditingComplaint}
+                      className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition"
+                    >
+                      <FaEdit /> Edit
+                    </button>
+                  )}
                 </div>
                 
-                <div className="mb-3">
-                  <p className="text-sm text-gray-500 mb-1">Issue Keyword</p>
-                  <p className="font-medium">{complaintData.issueKeyword}</p>
-                </div>
-                
-                <div className="mb-3">
-                  <p className="text-sm text-gray-500 mb-1">Priority</p>
-                  <p className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    complaintData.priority === 'high' ? 'bg-red-100 text-red-800' :
-                    complaintData.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {complaintData.priority?.toUpperCase()}
-                  </p>
-                </div>
-                
-                <div className="mb-3">
-                  <p className="text-sm text-gray-500 mb-1">Description</p>
-                  <div className="bg-white p-3 rounded-lg border">
-                    <p className="text-gray-700 whitespace-pre-wrap">{complaintData.description}</p>
-                  </div>
-                </div>
-                
-                {/* Official Government Format */}
-                {complaintData.formalTemplate && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-500 mb-2 flex items-center gap-2">
-                      <FaStamp className="text-blue-600" />
-                      Official Government Complaint Format
-                    </p>
-                    <div className="bg-white p-3 rounded-lg border max-h-64 overflow-y-auto">
-                      <pre className="text-gray-700 text-sm whitespace-pre-wrap font-mono">
-                        {complaintData.formalTemplate}
-                      </pre>
+                {isEditingComplaints ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-gray-700 font-medium block mb-1">Description</label>
+                      <textarea
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                        className="w-full border-2 border-gray-300 rounded p-3 focus:border-blue-500 focus:outline-none"
+                        rows="4"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-700 font-medium block mb-1">Official Format</label>
+                      <textarea
+                        value={editedTemplate}
+                        onChange={(e) => setEditedTemplate(e.target.value)}
+                        className="w-full border-2 border-gray-300 rounded p-3 focus:border-blue-500 focus:outline-none"
+                        rows="4"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={cancelEditingComplaint}
+                        className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAdminEditComplaint}
+                        disabled={savingEdit}
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {savingEdit ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                        Save Changes
+                      </button>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-500 mb-1">Department</p>
+                      <p className="font-medium">{complaintData.department}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-500 mb-1">Issue Keyword</p>
+                      <p className="font-medium">{complaintData.issueKeyword}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-500 mb-1">Priority</p>
+                      <p className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        complaintData.priority === 'high' ? 'bg-red-100 text-red-800' :
+                        complaintData.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {complaintData.priority?.toUpperCase()}
+                      </p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-500 mb-1">Description</p>
+                      <div className="bg-white p-3 rounded-lg border">
+                        <p className="text-gray-700 whitespace-pre-wrap">{complaintData.description}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Official Government Format */}
+                    {complaintData.formalTemplate && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-500 mb-2 flex items-center gap-2">
+                          <FaStamp className="text-blue-600" />
+                          Official Government Complaint Format
+                        </p>
+                        <div className="bg-white p-3 rounded-lg border max-h-64 overflow-y-auto">
+                          <pre className="text-gray-700 text-sm whitespace-pre-wrap font-mono">
+                            {complaintData.formalTemplate}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

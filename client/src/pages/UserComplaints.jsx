@@ -572,22 +572,13 @@ export default function Complaints() {
     if (!showEditSuccessModal) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-in">
-        <div className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-md w-full">
-          <div className="mb-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <FaCheckCircle className="text-4xl text-green-600" />
-            </div>
+      <div className="fixed top-0 left-0 right-0 z-50 p-4 animate-in">
+        <div className="max-w-7xl mx-auto bg-green-500 text-white rounded-lg shadow-lg p-4 flex items-center gap-3">
+          <FaCheckCircle className="text-2xl flex-shrink-0" />
+          <div>
+            <p className="font-bold text-lg">Complaint Updated Successfully!</p>
+            <p className="text-green-50 text-sm">Your complaint has been updated. Admin will review your changes.</p>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Complaint Updated!</h2>
-          <p className="text-gray-600 mb-2">Your complaint has been successfully updated.</p>
-          <p className="text-sm text-gray-500">The admin will review your changes.</p>
-          <button
-            onClick={() => setShowEditSuccessModal(false)}
-            className="mt-6 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
-          >
-            Done
-          </button>
         </div>
       </div>
     );
