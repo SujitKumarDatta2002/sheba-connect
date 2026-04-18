@@ -11,6 +11,9 @@ const Service = require('../models/Service');
 const Helpline = require('../models/Helpline');
 const Appointment = require('../models/Appointment');
 
+
+
+
 // Admin routes - auth must come before admin check
 router.use(authMiddleware);
 router.use(adminMiddleware);
@@ -164,6 +167,22 @@ router.get('/complaints/:id', async (req, res) => {
   }
 });
 
+// Get appointments for a specific complaint
+router.get('/complaints/:id/appointments', async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ complaintId: req.params.id })
+      .populate('userId', 'name email phone')
+      .populate('adminId', 'name email')
+      .populate('complaintId', 'complaintNumber description status')
+      .sort({ appointmentDate: -1, createdAt: -1 });
+
+    res.json(appointments);
+  } catch (error) {
+    console.error('Error fetching complaint appointments:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Update complaint status
 router.put('/complaints/:id/status', async (req, res) => {
   try {
@@ -212,6 +231,47 @@ router.put('/complaints/:id/status', async (req, res) => {
       details: error.toString(),
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
+  }
+});
+
+// Update complaint details (admin only)
+router.put('/complaints/:id', async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { description, formalTemplate } = req.body;
+    const complaint = await Complaint.findById(req.params.id);
+
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    // Update fields if provided
+    if (description && description.trim()) {
+      complaint.description = description;
+    }
+    if (formalTemplate && formalTemplate.trim()) {
+      complaint.formalTemplate = formalTemplate;
+    }
+
+    // Add to timeline
+    if (!Array.isArray(complaint.timeline)) {
+      complaint.timeline = [];
+    }
+    complaint.timeline.push({
+      status: complaint.status,
+      comment: 'Complaint updated by admin',
+      updatedBy: 'Admin',
+      date: new Date()
+    });
+
+    await complaint.save();
+    res.json(complaint);
+  } catch (error) {
+    console.error('Error updating complaint:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -513,7 +573,7 @@ router.get('/appointments/:id', async (req, res) => {
 // Update appointment (admin edits details)
 router.put('/appointments/:id', async (req, res) => {
   try {
-    const { appointmentDate, appointmentTime, location, purpose, notes, outcome, followUpRequired, followUpNotes } = req.body;
+    const { appointmentDate, appointmentTime, location, purpose, notes, outcome, followUpRequired, followUpNotes, status } = req.body;
 
     const appointment = await Appointment.findByIdAndUpdate(
       req.params.id,
@@ -525,7 +585,8 @@ router.put('/appointments/:id', async (req, res) => {
         notes,
         outcome,
         followUpRequired,
-        followUpNotes
+        followUpNotes,
+        status
       },
       { new: true, runValidators: true }
     ).populate(['userId', 'adminId', 'complaintId']);
@@ -689,6 +750,63 @@ router.get('/complaints/feedback/pending', async (req, res) => {
     res.json(complaints);
   } catch (error) {
     console.error('Error fetching pending feedbacks:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get survey statistics (Admin only) - MUST come before other /surveys routes
+router.get('/surveys/stats/overview', async (req, res) => {
+  try {
+    const totalSurveys = await Survey.countDocuments();
+    const avgSatisfaction = await Survey.aggregate([
+      { $group: { _id: null, avg: { $avg: '$satisfaction' } } }
+    ]);
+    const helpfulCount = await Survey.countDocuments({ helpful: true });
+    const avgResolutionTime = await Survey.aggregate([
+      { $group: { _id: null, avg: { $avg: '$resolutionTime' } } }
+    ]);
+
+    res.json({
+      totalSurveys,
+      avgSatisfaction: avgSatisfaction[0]?.avg || 0,
+      helpfulPercentage: totalSurveys > 0 ? (helpfulCount / totalSurveys * 100).toFixed(2) : 0,
+      avgResolutionTime: avgResolutionTime[0]?.avg || 0
+    });
+  } catch (error) {
+    console.error('Error fetching survey stats:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get survey by complaint ID (Admin only)
+router.get('/surveys/:complaintId', async (req, res) => {
+  try {
+    const survey = await Survey.findOne({ complaintId: req.params.complaintId })
+      .populate('userId', 'name email nid phone address')
+      .populate('complaintId', 'complaintNumber department issueKeyword');
+
+    if (!survey) {
+      return res.status(404).json({ message: 'Survey not found' });
+    }
+
+    res.json(survey);
+  } catch (error) {
+    console.error('Error fetching survey:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get all surveys (Admin only)
+router.get('/surveys', async (req, res) => {
+  try {
+    const surveys = await Survey.find()
+      .populate('userId', 'name email nid')
+      .populate('complaintId', 'complaintNumber department issueKeyword')
+      .sort({ createdAt: -1 });
+
+    res.json(surveys);
+  } catch (error) {
+    console.error('Error fetching surveys:', error);
     res.status(500).json({ message: error.message });
   }
 });

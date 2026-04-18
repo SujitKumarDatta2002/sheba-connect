@@ -1,0 +1,211 @@
+{
+	"info": {
+		"_postman_id": "service-portal-api",
+		"name": "Service Portal API Collection",
+		"description": "Complete API collection for Service Portal project submission",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Service Management APIs",
+			"item": [
+				{
+					"name": "Get All Available Services",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/services",
+							"host": ["{{baseUrl}}"],
+							"path": ["services"]
+						}
+					}
+				},
+				{
+					"name": "Get User's Saved Services",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/services/saved/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["services", "saved", "{{userId}}"]
+						}
+					}
+				},
+				{
+					"name": "Save a Service for User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{userId}}\",\n  \"serviceId\": \"{{serviceId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/services/save",
+							"host": ["{{baseUrl}}"],
+							"path": ["services", "save"]
+						}
+					}
+				},
+				{
+					"name": "Remove a Saved Service",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{userId}}\",\n  \"serviceId\": \"{{serviceId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/services/remove",
+							"host": ["{{baseUrl}}"],
+							"path": ["services", "remove"]
+						}
+					}
+				},
+				{
+					"name": "Get Missing Prerequisites Warnings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/services/warnings/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["services", "warnings", "{{userId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Complaint Management APIs",
+			"item": [
+				{
+					"name": "Get User's Complaints",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/complaints/user/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["complaints", "user", "{{userId}}"]
+						}
+					}
+				},
+				{
+					"name": "Submit New Complaint",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user\": \"{{userId}}\",\n  \"subject\": \"New Service Issue\",\n  \"description\": \"I'm experiencing issues with the service functionality\",\n  \"priority\": \"High\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/complaints",
+							"host": ["{{baseUrl}}"],
+							"path": ["complaints"]
+						}
+					}
+				},
+				{
+					"name": "Update Complaint Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"In Progress\",\n  \"priority\": \"Medium\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/complaints/{{complaintId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["complaints", "{{complaintId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Complaint",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/complaints/{{complaintId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["complaints", "{{complaintId}}"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:1811/api",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "60f7b3b3b3b3b3b3b3b3b3b4",
+			"type": "string"
+		},
+		{
+			"key": "serviceId",
+			"value": "60f7b3b3b3b3b3b3b3b3b3b3",
+			"type": "string"
+		},
+		{
+			"key": "complaintId",
+			"value": "60f7b3b3b3b3b3b3b3b3b3b5",
+			"type": "string"
+		}
+	]
+}
