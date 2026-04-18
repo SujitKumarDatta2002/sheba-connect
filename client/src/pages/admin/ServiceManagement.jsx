@@ -1,6 +1,7 @@
 import API from "../../config/api";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import {
   FaPlus, FaEdit, FaTrash, FaSearch, FaTimes,
   FaSave, FaBuilding, FaClock, FaMoneyBillWave,
@@ -26,6 +27,7 @@ export default function ServiceManagement() {
     department: '',
     cost: '',
     processingTime: '',
+    processSteps: [''],
     requiredDocuments: [],
     eligibilityCriteria: '',
     urgency: 'medium',
@@ -153,10 +155,18 @@ export default function ServiceManagement() {
       const url = editingItem
         ? `${API}/api/admin/services/${editingItem._id}`
         : `${API}/api/admin/services`;
-
+{/*IFTI START*/}
       const method = editingItem ? 'put' : 'post';
+      const servicePayload = {
+        ...serviceForm,
+        processSteps: (serviceForm.processSteps || [])
+          .map(step => step.trim())
+          .filter(Boolean)
+          .join('\n')
+      };
 
-      await axios[method](url, serviceForm, {
+      await axios[method](url, servicePayload, {
+      /*IFTI END*/
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -240,6 +250,7 @@ export default function ServiceManagement() {
       department: '',
       cost: '',
       processingTime: '',
+      processSteps: [''],
       requiredDocuments: [],
       eligibilityCriteria: '',
       urgency: 'medium',
@@ -258,8 +269,15 @@ export default function ServiceManagement() {
       available24x7: false
     });
   };
-
+/*IFTI START */
   const editService = (service) => {
+    const normalizedSteps = Array.isArray(service.processSteps)
+      ? service.processSteps
+      : String(service.processSteps || '')
+          .split('\n')
+          .map(step => step.trim())
+          .filter(Boolean);
+/*IFTI END*/
     setEditingItem(service);
     setServiceForm({
       name: service.name,
@@ -267,6 +285,7 @@ export default function ServiceManagement() {
       department: service.department,
       cost: service.cost,
       processingTime: service.processingTime,
+      processSteps: normalizedSteps.length ? normalizedSteps : [''],
       requiredDocuments: service.requiredDocuments || [],
       eligibilityCriteria: service.eligibilityCriteria,
       urgency: service.urgency,
@@ -274,6 +293,28 @@ export default function ServiceManagement() {
       isActive: service.isActive
     });
     setShowModal(true);
+  };
+
+  const addProcessStepField = () => {
+    setServiceForm(prev => ({
+      ...prev,
+      processSteps: [...(prev.processSteps || []), '']
+    }));
+  };
+
+  const updateProcessStep = (index, value) => {
+    setServiceForm(prev => {
+      const nextSteps = [...(prev.processSteps || [''])];
+      nextSteps[index] = value;
+      return { ...prev, processSteps: nextSteps };
+    });
+  };
+
+  const removeProcessStepField = (index) => {
+    setServiceForm(prev => {
+      const nextSteps = (prev.processSteps || []).filter((_, i) => i !== index);
+      return { ...prev, processSteps: nextSteps.length ? nextSteps : [''] };
+    });
   };
 // ...existing code...
 // In the services grid, add status indicator and toggle button
@@ -402,17 +443,31 @@ export default function ServiceManagement() {
               <h1 className="text-4xl font-bold mb-2">Service & Helpline Management</h1>
               <p className="text-purple-100 text-lg">Add, edit, or remove services and emergency contacts</p>
             </div>
-            <button
-              onClick={() => {
-                setEditingItem(null);
-                activeTab === 'services' ? resetServiceForm() : resetHelplineForm();
-                setShowModal(true);
-              }}
-              className="px-6 py-3 bg-white text-purple-700 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 font-semibold"
-            >
-              <FaPlus />
-              Add New {activeTab === 'services' ? 'Service' : 'Helpline'}
-            </button>
+            <div className="flex gap-2">
+              <Link
+                to="/admin/applications"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2 font-semibold"
+              >
+                Review Applications
+              </Link>
+              <Link
+                to="/iftianlytics"
+                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 font-semibold"
+              >
+                Analytics
+              </Link>
+              <button
+                onClick={() => {
+                  setEditingItem(null);
+                  activeTab === 'services' ? resetServiceForm() : resetHelplineForm();
+                  setShowModal(true);
+                }}
+                className="px-6 py-3 bg-white text-purple-700 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 font-semibold"
+              >
+                <FaPlus />
+                Add New {activeTab === 'services' ? 'Service' : 'Helpline'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -496,6 +551,41 @@ export default function ServiceManagement() {
                           <FaClock className="text-orange-500" />
                           <span className="font-medium">Processing:</span>
                           <span className="text-gray-600">{service.processingTime}</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <FaFileAlt className="text-indigo-500 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="font-medium">Process Steps:</p>
+                            {String(service.processSteps || '').split('\n').map(step => step.trim()).filter(Boolean).length ? (
+                              <ol className="list-decimal list-inside text-gray-600 max-h-24 overflow-y-auto pr-1 space-y-1">
+                                {String(service.processSteps || '')
+                                  .split('\n')
+                                  .map(step => step.trim())
+                                  .filter(Boolean)
+                                  .map((step, idx) => (
+                                    <li key={`${service._id}-step-${idx}`}>{step}</li>
+                                  ))}
+                              </ol>
+                            ) : (
+                              <p className="text-gray-600">N/A</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <FaCheckCircle className="text-teal-500 mt-0.5" />
+                          <span className="font-medium">Eligibility:</span>
+                          <span className="text-gray-600 line-clamp-2">{service.eligibilityCriteria || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <FaFileAlt className="text-purple-500 mt-0.5" />
+                          <span className="font-medium">Required Docs:</span>
+                          <span className="text-gray-600 line-clamp-2">
+                            {(service.requiredDocuments || []).length
+                              ? service.requiredDocuments
+                                  .map(doc => (documentOptions.find(opt => opt.value === doc) || { label: doc }).label)
+                                  .join(', ')
+                              : 'N/A'}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <FaPhone className="text-blue-500" />
@@ -733,6 +823,37 @@ export default function ServiceManagement() {
                         onChange={(e) => setServiceForm({ ...serviceForm, eligibilityCriteria: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Process Steps</label>
+                      <div className="space-y-2">
+                        {(serviceForm.processSteps || ['']).map((step, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={step}
+                              onChange={(e) => updateProcessStep(index, e.target.value)}
+                              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                              placeholder={`Step ${index + 1}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeProcessStepField(index)}
+                              className="px-3 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={addProcessStepField}
+                          className="inline-flex items-center gap-2 px-3 py-2 text-sm text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100"
+                        >
+                          <FaPlus /> Add Step
+                        </button>
+                      </div>
                     </div>
 
                     <div>

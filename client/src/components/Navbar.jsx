@@ -242,6 +242,7 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import NotificationBell from "./NotificationBell";
 import { 
   FaClipboardList, 
   FaCogs, 
@@ -251,7 +252,6 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
-  FaBell,
   FaChevronDown,
   FaShieldAlt,
   FaChartBar,
@@ -285,6 +285,7 @@ export default function Navbar({ user, setUser }) {
   const adminNavigation = [
     { name: "Home", path: "/", icon: <FaHome /> },
     { name: "Dashboard", path: "/admin", icon: <FaChartBar /> },
+    { name: "Applications", path: "/admin/applications", icon: <FaClipboardList /> },
     { name: "Users", path: "/admin/users", icon: <FaUsers /> },
     { name: "Services", path: "/admin/services", icon: <FaCogs /> },
     { name: "Solutions", path: "/admin/solutions", icon: <FaLightbulb /> },
@@ -325,13 +326,8 @@ export default function Navbar({ user, setUser }) {
           <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
-                {/* Notification Bell - Only for regular users */}
-                {user.role !== 'admin' && (
-                  <button className="relative p-2 hover:bg-blue-800 rounded-full">
-                    <FaBell className="text-xl" />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </button>
-                )}
+              {/* IFTI */}
+                <NotificationBell />
 
                 {/* Profile Dropdown */}
                 <div className="relative">

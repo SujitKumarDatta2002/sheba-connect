@@ -130,6 +130,10 @@ const serviceSchema = new mongoose.Schema(
       type: String, // e.g., "3-5 working days"
       required: true
     },
+    processSteps: {
+      type: String,
+      default: ''
+    },
     urgency: {
       type: String,
       enum: ['low', 'medium', 'high', 'emergency'],

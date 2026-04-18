@@ -509,7 +509,7 @@ import {
   FaSearch, FaFilter, FaPhone, FaTimes, FaChevronDown,
   FaExclamationTriangle, FaAmbulance, FaFire, FaShieldAlt,
   FaBolt, FaRoad, FaHospital, FaSchool, FaCity, FaGlobe,
-  FaExternalLinkAlt, FaInfoCircle, FaDollarSign
+  FaExternalLinkAlt, FaInfoCircle, FaDollarSign, FaPaperPlane
 } from 'react-icons/fa';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -804,7 +804,56 @@ export default function Services() {
   var helplineCategoryState = useState('');
   var helplineCategory = helplineCategoryState[0];
   var setHelplineCategory = helplineCategoryState[1];
+{/* IFTI */}
+  var toastState = useState({ show: false, message: '', type: 'success' });
+  var toast = toastState[0];
+  var setToast = toastState[1];
 
+  var applyingServiceState = useState({});
+  var applyingService = applyingServiceState[0];
+  var setApplyingService = applyingServiceState[1];
+
+  function showToast(message, type) {
+    setToast({ show: true, message: message, type: type || 'success' });
+    setTimeout(function() {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 3000);
+  }
+
+  function handleApply(serviceId) {
+    var token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login first', 'error');
+      return;
+    }
+
+    setApplyingService(function(prev) {
+      var next = Object.assign({}, prev);
+      next[serviceId] = true;
+      return next;
+    });
+
+    axios.post(
+      `${API}/api/applications/apply`,
+      { serviceId: serviceId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .then(function(res) {
+        showToast(res.data?.message || 'Application submitted successfully', 'success');
+      })
+      .catch(function(err) {
+        var errorMessage = err.response?.data?.message || 'Failed to submit application';
+        showToast(errorMessage, 'error');
+      })
+      .finally(function() {
+        setApplyingService(function(prev) {
+          var next = Object.assign({}, prev);
+          next[serviceId] = false;
+          return next;
+        });
+      });
+  }
+{/* IFTI END*/ }
   var fetchServices = useCallback(function() {
     setLoading(true);
     var params = new URLSearchParams();
@@ -864,6 +913,13 @@ export default function Services() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Toast Notification IFTI*/}
+      {toast.show && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white shadow-lg ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-600'}`}>
+          {toast.message}
+        </div>
+      )}
+      {/*IFTI_END */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
@@ -1024,12 +1080,16 @@ export default function Services() {
                   var mailtoHref = buildMailtoLink(service.email, service.name, userEmail, userName);
                   var callHref   = service.helpline ? 'tel:' + service.helpline : null;
                   var mapTo      = '/nearby?serviceId=' + service._id;
-
+                  {/*IFTI START*/ }
+                  var processStepsList = String(service.processSteps || '')
+                    .split('\n')
+                    .map(function(step) { return step.trim(); })
+                    .filter(Boolean);
+                  {/*IFTI END*/}
                   return (
                     <div
                       key={service._id}
-                      className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:border-gray-300 hover:shadow-md"
-                      style={{ height: '420px' }}
+                      className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:border-gray-300 hover:shadow-md min-h-[420px]"
                     >
                       {/* Card header */}
                       <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex-shrink-0">
@@ -1046,12 +1106,26 @@ export default function Services() {
                         <h3 className="text-sm font-semibold text-gray-800 leading-snug truncate">{service.name}</h3>
                         <p className="text-xs text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{service.description}</p>
                       </div>
-
+                      {/*IFTI START*/}
                       {/* Card body */}
-                      <div className="px-4 py-3 flex flex-col gap-2.5 flex-1 overflow-hidden">
+                      <div className="px-4 py-3 flex flex-col gap-2.5 flex-1 overflow-visible">
+                      {/*IFTI END*/}
                         <MetaRow iconBg="#EAF3DE" icon={IconClock} label="Processing">
                           <span className="text-xs font-medium text-gray-700">{service.processingTime}</span>
                         </MetaRow>
+                        {/*IFTI START*/ }
+                        <MetaRow iconBg="#EEEDFE" icon={IconDoc} label="Process Steps">
+                          {processStepsList.length ? (
+                            <ol className="list-decimal list-inside text-xs font-medium text-gray-700 max-h-20 overflow-y-auto pr-1 space-y-1">
+                              {processStepsList.map(function(step, idx) {
+                                return <li key={service._id + '-step-' + idx}>{step}</li>;
+                              })}
+                            </ol>
+                          ) : (
+                            <span className="text-xs font-medium text-gray-700">N/A</span>
+                          )}
+                        </MetaRow>
+                        {/*IFTI END*/ }
                         <MetaRow iconBg="#E1F5EE" icon={IconPerson} label="Eligibility">
                           <span className="text-xs font-medium text-gray-700 line-clamp-1">{service.eligibilityCriteria}</span>
                         </MetaRow>
@@ -1086,12 +1160,27 @@ export default function Services() {
                       </div>
 
                       {/* Footer actions */}
-                      <div className="grid grid-cols-4 gap-1.5 px-3 pb-3 flex-shrink-0">
+                      {/*IFTI Start*/}
+                      <div className="grid grid-cols-4 gap-1.5 px-3 pb-2 flex-shrink-0">
+                      {/*IFTI END*/}
                         <ActionBtn href={service.website} bg="#E6F1FB" color="#0C447C" IconComp={IconWeb}   label="Website" disabled={!service.website} />
                         <ActionBtn href={callHref}        bg="#EAF3DE" color="#27500A" IconComp={IconPhone} label="Call"    disabled={!service.helpline} />
                         <ActionBtn href={mailtoHref}      bg="#EEEDFE" color="#26215C" IconComp={IconMail}  label="Email"  disabled={!service.email} />
                         <ActionBtn to={mapTo}             bg="#FCEBEB" color="#791F1F" IconComp={IconMap}   label="Map" />
                       </div>
+                      {/*IFTI START*/}
+                      <div className="px-3 pb-3">
+                        <button
+                          type="button"
+                          onClick={function() { handleApply(service._id); }}
+                          disabled={!!applyingService[service._id]}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                        >
+                          <FaPaperPlane />
+                          {applyingService[service._id] ? 'Applying...' : 'Apply'}
+                        </button>
+                      </div>
+                      {/*IFTI END*/}
                     </div>
                   );
                 })}
