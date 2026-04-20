@@ -35,4 +35,21 @@ router.post("/resolution-time", setResolutionTime);
 // Get resolution statistics
 router.get("/stats", getResolutionStats);
 
+// Check if survey exists for a complaint
+router.get("/check/:complaintId", async (req, res) => {
+  try {
+    const survey = await require("../models/Survey").findOne({ 
+      complaintId: req.params.complaintId 
+    });
+    
+    res.json({ 
+      exists: !!survey,
+      survey: survey || null
+    });
+  } catch (error) {
+    console.error("Error checking survey:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

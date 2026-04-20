@@ -196,17 +196,26 @@
 
 
 
-
-require("dotenv").config();
+//IFTI
+const path = require('path');
+require("dotenv").config({
+  path: [
+    path.resolve(__dirname, "../.env"),
+    path.resolve(__dirname, ".env")
+  ]
+});
+//IFTI
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
-const path = require('path');
 
 const serviceRoutes = require('./routes/serviceRoutes');
 const helplineRoutes = require('./routes/helplineRoutes');
 const surveyRoutes = require('./routes/surveyRoutes');
 const aiRoutes = require("./routes/ai");
+const analyticsRoutes = require("./routes/analytics.routes");
+const { startDataSyncJob } = require("./jobs/dataSync.job");
+const { startExtendedDataSyncJobs } = require("./jobs/extendedDataSync.job");
 
 // Import models
 require("./models/User");
@@ -215,25 +224,25 @@ require("./models/UserDocument");
 require("./models/Survey");
 require("./models/Solution");
 require("./models/Appointment");
-require("./models/ServiceApplication");
+require("./models/Application");
+require("./models/Notification");
 
 const app = express();
 
 // Connect to database
 connectDB();
 
-// ── Start background jobs ────────────────────────────────────────────────────
-const { startReminderJob } = require('./jobs/reminderJob');
-startReminderJob();
-
 // CORS Middleware
 app.use(cors({
   origin: [
     'https://sheba-connect-eight.vercel.app',
-    'http://localhost:5173'
+    /^http:\/\/localhost:\d+$/,
+    /^http:\/\/127\.0\.0\.1:\d+$/,
+    /^https:\/\/localhost:\d+$/,
+    /^https:\/\/127\.0\.0\.1:\d+$/
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -255,6 +264,10 @@ app.use("/api/solutions", solutionRoutes);
 // Admin routes
 const adminRoutes = require("./routes/adminRoutes");
 app.use("/api/admin", adminRoutes);
+
+// IftiAdmin MVC routes
+const iftiAdminRoutes = require("./routes/iftiAdminRoutes");
+app.use("/api/iftiadmin", iftiAdminRoutes);
 
 // Root route
 app.get("/", (req, res) => {
@@ -294,6 +307,14 @@ app.use("/api/complaints", complaintRoutes);
 const documentRoutes = require("./routes/documentRoutes");
 app.use("/api/documents", documentRoutes);
 
+// Application routes
+const applicationRoutes = require("./routes/applicationRoutes");
+app.use("/api/applications", applicationRoutes);
+
+// Notification routes
+const notificationRoutes = require("./routes/notificationRoutes");
+app.use("/api/notifications", notificationRoutes);
+
 // User profile routes
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
@@ -309,13 +330,12 @@ app.use('/api/surveys', surveyRoutes);
 const officeRoutes = require('./routes/officeRoutes');
 app.use('/api/offices', officeRoutes);
 
-// Service application routes
-const serviceApplicationRoutes = require('./routes/serviceApplicationRoutes');
-app.use('/api/service-applications', serviceApplicationRoutes);
+// Analytics routes
+app.use('/api/analytics', analyticsRoutes);
 
-// SMS routes (authenticated — lets the frontend trigger real SMS)
-const smsRoutes = require('./routes/smsRoutes');
-app.use('/api/sms', smsRoutes);
+// Analytics external data sync scheduler
+startDataSyncJob();
+startExtendedDataSyncJobs();
 
 const PORT = process.env.PORT || 5000;
 
