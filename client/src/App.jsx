@@ -130,6 +130,8 @@ import NearbyOffices from "./pages/NearbyOffices"; // 👈 Import new page
 import ServiceManagement from "./pages/admin/ServiceManagement";
 import AdminApplicationReview from "./pages/admin/AdminApplicationReview";{/* IFTI */}
 import IftiAnalytics from "./pages/IftiAnalytics";{/* IFTI */}
+import UserNotifications from "./pages/UserNotifications";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -218,6 +220,25 @@ function App() {
           element={
             <PrivateRoute>
               <NearbyOffices />
+            </PrivateRoute>
+          }
+        />
+
+        {/* User Notifications Route */}
+        <Route
+          path="/notifications"
+          element={
+            <PrivateRoute>
+              <UserNotifications />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <PrivateRoute>
+              <AnalyticsDashboard />
             </PrivateRoute>
           }
         />

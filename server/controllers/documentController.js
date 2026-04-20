@@ -215,6 +215,8 @@ const mongoose   = require('mongoose');
 const { GridFSBucket } = require('mongodb');
 const { Readable } = require('stream');
 const UserDocument = require('../models/UserDocument');
+const User         = require('../models/User');
+const { notifyDocumentVerified } = require('../services/smsService');
 
 // ── Helper: get a GridFSBucket from the current connection ──────────────────
 function getBucket() {
@@ -379,13 +381,56 @@ const verifyDocument = async (req, res) => {
       return res.status(403).json({ message: 'Only admins can verify documents' });
     }
 
+    const { status } = req.body;
+    const allowedStatuses = ['Pending', 'Verified', 'Rejected'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: `Invalid status. Must be one of: ${allowedStatuses.join(', ')}` });
+    }
+
+    // Update document status
     const doc = await UserDocument.findByIdAndUpdate(
       req.params.id,
-      { status: req.body.status },
+      { status },
       { new: true }
     );
 
     if (!doc) return res.status(404).json({ message: 'Document not found' });
+
+    // ── SMS Notification ────────────────────────────────────────────────────
+    // Only notify on Verified or Rejected — not on Pending resets
+    if (status === 'Verified' || status === 'Rejected') {
+      try {
+        const user = await User.findById(doc.userId);
+        if (user?.phone) {
+          // Human-readable document type label
+          const docLabels = {
+            nid:                   'National ID (NID)',
+            passport:              'Passport',
+            birthCertificate:      'Birth Certificate',
+            tin:                   'TIN Certificate',
+            drivingLicense:        'Driving License',
+            citizenship:           'Citizenship Certificate',
+            educationalCertificate:'Educational Certificate',
+          };
+          const docLabel = docLabels[doc.documentType] || doc.documentType;
+
+          if (status === 'Verified') {
+            await notifyDocumentVerified(user.phone, docLabel);
+          } else {
+            // Rejected — use sendSMS directly for a different message
+            const { sendSMS } = require('../services/smsService');
+            await sendSMS(
+              user.phone,
+              `[ShebaConnect] Your ${docLabel} verification was rejected. Please re-upload a clear, valid document.`
+            );
+          }
+        }
+      } catch (smsErr) {
+        // SMS failure must NEVER fail the main operation
+        console.warn('[documentController] SMS notification failed (non-fatal):', smsErr.message);
+      }
+    }
+
     res.json(doc);
   } catch (error) {
     console.error('verifyDocument error:', error);

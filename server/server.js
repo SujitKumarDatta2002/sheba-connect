@@ -213,6 +213,9 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const helplineRoutes = require('./routes/helplineRoutes');
 const surveyRoutes = require('./routes/surveyRoutes');
 const aiRoutes = require("./routes/ai");
+const analyticsRoutes = require("./routes/analytics.routes");
+const { startDataSyncJob } = require("./jobs/dataSync.job");
+const { startExtendedDataSyncJobs } = require("./jobs/extendedDataSync.job");
 
 // Import models
 require("./models/User");
@@ -233,7 +236,10 @@ connectDB();
 app.use(cors({
   origin: [
     'https://sheba-connect-eight.vercel.app',
-    /^http:\/\/localhost:\d+$/
+    /^http:\/\/localhost:\d+$/,
+    /^http:\/\/127\.0\.0\.1:\d+$/,
+    /^https:\/\/localhost:\d+$/,
+    /^https:\/\/127\.0\.0\.1:\d+$/
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -323,6 +329,13 @@ app.use('/api/surveys', surveyRoutes);
 // Office routes
 const officeRoutes = require('./routes/officeRoutes');
 app.use('/api/offices', officeRoutes);
+
+// Analytics routes
+app.use('/api/analytics', analyticsRoutes);
+
+// Analytics external data sync scheduler
+startDataSyncJob();
+startExtendedDataSyncJobs();
 
 const PORT = process.env.PORT || 5000;
 

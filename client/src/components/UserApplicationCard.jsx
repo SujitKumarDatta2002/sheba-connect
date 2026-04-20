@@ -1,60 +1,73 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { FaExclamationTriangle, FaUpload } from "react-icons/fa";
+import API from "../config/api";
 
+export default function UserApplicationCard({ app }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState({});
+
+  const requestedFields = app.requestedFields || [];
+
+  const handleFileChange = (field, file) => {
+    setSelectedFiles((prev) => ({
+      ...prev,
+      [field]: file || null,
+    }));
+  };
 
   const handleUpload = async () => {
-    if (!file) {
-      showNotification("Please select a file", "error");
+    if (!requestedFields.length) {
+      alert("No requested documents found for this application.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("documentType", type);
+    const missingFields = requestedFields.filter((field) => !selectedFiles[field]);
+    if (missingFields.length > 0) {
+      alert("Please choose files for all requested documents before submitting.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
     try {
       setLoading(true);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
+
+      await Promise.all(
+        requestedFields.map((field) => {
+          const formData = new FormData();
+          formData.append("file", selectedFiles[field]);
+          formData.append("documentType", field);
+
+          return axios.post(`${API}/api/documents`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        })
+      );
+
+      alert("Requested documents submitted successfully.");
+      navigate("/documents");
+    } catch (err) {
+      if (err.response?.status === 401) {
+        navigate("/login");
         return;
       }
 
-      await axios.post(
-        `${API}/api/documents`,
-        formData,
-        {
-          headers: { 
-            "Content-Type": "multipart/form-data",
-            "Authorization": `Bearer ${token}`
-          },
-          onUploadProgress: (progressEvent) => {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(progress);
-          }
-        }
-      );
-
-      showNotification("Document uploaded successfully", "success");
-      
-      setTimeout(() => {
-        navigate("/documents");
-      }, 1500);
-
-    } catch (err) {
-      console.log(err);
-      if (err.response?.status === 401) {
-        navigate('/login');
-      } else {
-        showNotification(err.response?.data?.message || "Upload failed. Please try again.", "error");
-      }
-      setUploadProgress(0);
+      alert(err.response?.data?.message || "Upload failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-export default function UserApplicationCard({ app }) {
   return (
     <div className="bg-white rounded-xl shadow border border-gray-100 p-6 flex flex-col md:flex-row gap-6 items-start">
       <div className="flex-1 w-full">
@@ -109,17 +122,18 @@ export default function UserApplicationCard({ app }) {
             </div>
           )}
 
-          {app.requestedFields && app.requestedFields.length > 0 && (
+          {requestedFields.length > 0 && (
             <div className="mb-5">
               <h5 className="font-semibold text-gray-800 mb-2">Requested Documents:</h5>
               <div className="space-y-3">
-                {app.requestedFields.map((field, idx) => (
+                {requestedFields.map((field, idx) => (
                   <div key={idx} className="flex flex-col bg-white p-3 rounded-lg shadow-sm border border-gray-200">
                     <label className="text-sm font-medium text-gray-700 mb-1 capitalize">
                       {field.replace(/([A-Z])/g, ' $1').trim()}
                     </label>
                     <input
                       type="file"
+                      onChange={(e) => handleFileChange(field, e.target.files?.[0] || null)}
                       className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
                   </div>
@@ -130,9 +144,10 @@ export default function UserApplicationCard({ app }) {
 
           <button
             onClick={handleUpload}
+            disabled={loading}
             className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
           >
-            <FaUpload /> Submit Documents
+            <FaUpload /> {loading ? "Submitting..." : "Submit Documents"}
           </button>
         </div>
       )}

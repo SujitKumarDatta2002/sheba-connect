@@ -117,6 +117,10 @@ const serviceSchema = new mongoose.Schema(
         ]
       }
     ],
+    processSteps: {
+      type: [String],
+      default: []
+    },
     eligibilityCriteria: {
       type: String,
       required: true
@@ -129,10 +133,6 @@ const serviceSchema = new mongoose.Schema(
     processingTime: {
       type: String, // e.g., "3-5 working days"
       required: true
-    },
-    processSteps: {
-      type: String,
-      default: ''
     },
     urgency: {
       type: String,

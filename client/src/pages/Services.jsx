@@ -1081,10 +1081,12 @@ export default function Services() {
                   var callHref   = service.helpline ? 'tel:' + service.helpline : null;
                   var mapTo      = '/nearby?serviceId=' + service._id;
                   {/*IFTI START*/ }
-                  var processStepsList = String(service.processSteps || '')
-                    .split('\n')
-                    .map(function(step) { return step.trim(); })
-                    .filter(Boolean);
+                  var processStepsList = Array.isArray(service.processSteps)
+                    ? service.processSteps.filter(function(step) { return step && step.trim(); })
+                    : String(service.processSteps || '')
+                        .split('\n')
+                        .map(function(step) { return step.trim(); })
+                        .filter(Boolean);
                   {/*IFTI END*/}
                   return (
                     <div

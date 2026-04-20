@@ -157,12 +157,12 @@ export default function ServiceManagement() {
         : `${API}/api/admin/services`;
 {/*IFTI START*/}
       const method = editingItem ? 'put' : 'post';
+
       const servicePayload = {
         ...serviceForm,
         processSteps: (serviceForm.processSteps || [])
           .map(step => step.trim())
           .filter(Boolean)
-          .join('\n')
       };
 
       await axios[method](url, servicePayload, {
@@ -445,12 +445,6 @@ export default function ServiceManagement() {
             </div>
             <div className="flex gap-2">
               <Link
-                to="/admin/applications"
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2 font-semibold"
-              >
-                Review Applications
-              </Link>
-              <Link
                 to="/iftianlytics"
                 className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 font-semibold"
               >
@@ -556,15 +550,11 @@ export default function ServiceManagement() {
                           <FaFileAlt className="text-indigo-500 mt-0.5" />
                           <div className="min-w-0">
                             <p className="font-medium">Process Steps:</p>
-                            {String(service.processSteps || '').split('\n').map(step => step.trim()).filter(Boolean).length ? (
+                            {Array.isArray(service.processSteps) && service.processSteps.length ? (
                               <ol className="list-decimal list-inside text-gray-600 max-h-24 overflow-y-auto pr-1 space-y-1">
-                                {String(service.processSteps || '')
-                                  .split('\n')
-                                  .map(step => step.trim())
-                                  .filter(Boolean)
-                                  .map((step, idx) => (
-                                    <li key={`${service._id}-step-${idx}`}>{step}</li>
-                                  ))}
+                                {service.processSteps.map((step, idx) => (
+                                  <li key={`${service._id}-step-${idx}`}>{step}</li>
+                                ))}
                               </ol>
                             ) : (
                               <p className="text-gray-600">N/A</p>
