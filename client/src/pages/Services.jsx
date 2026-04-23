@@ -503,7 +503,7 @@
 
 import API from "../config/api";
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
   FaSearch, FaFilter, FaPhone, FaTimes, FaChevronDown,
@@ -773,6 +773,8 @@ function ActionBtn(props) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Services() {
+  var navigate = useNavigate();
+  var location = useLocation();
   var activeTabState = useState('services');
   var activeTab = activeTabState[0];
   var setActiveTab = activeTabState[1];
@@ -809,10 +811,6 @@ export default function Services() {
   var toast = toastState[0];
   var setToast = toastState[1];
 
-  var applyingServiceState = useState({});
-  var applyingService = applyingServiceState[0];
-  var setApplyingService = applyingServiceState[1];
-
   function showToast(message, type) {
     setToast({ show: true, message: message, type: type || 'success' });
     setTimeout(function() {
@@ -820,38 +818,23 @@ export default function Services() {
     }, 3000);
   }
 
+  useEffect(function() {
+    var toastState = location.state && location.state.toast;
+    if (!toastState || !toastState.message) {
+      return;
+    }
+
+    showToast(toastState.message, toastState.type || 'success');
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, navigate]);
+
   function handleApply(serviceId) {
     var token = localStorage.getItem('token');
     if (!token) {
       showToast('Please login first', 'error');
       return;
     }
-
-    setApplyingService(function(prev) {
-      var next = Object.assign({}, prev);
-      next[serviceId] = true;
-      return next;
-    });
-
-    axios.post(
-      `${API}/api/applications/apply`,
-      { serviceId: serviceId },
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-      .then(function(res) {
-        showToast(res.data?.message || 'Application submitted successfully', 'success');
-      })
-      .catch(function(err) {
-        var errorMessage = err.response?.data?.message || 'Failed to submit application';
-        showToast(errorMessage, 'error');
-      })
-      .finally(function() {
-        setApplyingService(function(prev) {
-          var next = Object.assign({}, prev);
-          next[serviceId] = false;
-          return next;
-        });
-      });
+    navigate('/apply-service/' + serviceId);
   }
 {/* IFTI END*/ }
   var fetchServices = useCallback(function() {
@@ -1175,11 +1158,10 @@ export default function Services() {
                         <button
                           type="button"
                           onClick={function() { handleApply(service._id); }}
-                          disabled={!!applyingService[service._id]}
                           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
                         >
                           <FaPaperPlane />
-                          {applyingService[service._id] ? 'Applying...' : 'Apply'}
+                          Apply
                         </button>
                       </div>
                       {/*IFTI END*/}

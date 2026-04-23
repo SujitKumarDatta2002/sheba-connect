@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosAuth from '../config/axiosInstance';
 import API from '../config/api';
@@ -48,17 +48,19 @@ export default function ServiceApplication() {
   const [checkingDocuments, setCheckingDocuments] = useState(false);
   const [resolutionAnalytics, setResolutionAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  const [smsPreferences, setSmsPreferences] = useState({
-    enabled: true,
-    phoneNumber: '',
-    reminders: true,
-    statusUpdates: true,
-    documentAlerts: true,
-    completionNotice: true
-  });
+  const [smsPhoneNumber, setSmsPhoneNumber] = useState('');
   const [smsNotificationStatus, setSmsNotificationStatus] = useState(null);
   const [sendingSms, setSendingSms] = useState(false);
   const [customSmsMessage, setCustomSmsMessage] = useState('');
+  const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
+
+  useEffect(() => {
+    if (!toast.show) return;
+    const timer = setTimeout(() => {
+      setToast({ show: false, type: 'success', message: '' });
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [toast.show]);
 
   // Fetch service details and user documents
   useEffect(() => {
@@ -245,7 +247,7 @@ export default function ServiceApplication() {
   };
 
 const sendApplicationReminder = async () => {
-  if (!smsPreferences.enabled || !smsPreferences.phoneNumber) {
+  if (!smsPhoneNumber) {
     return;
   }
 
@@ -253,7 +255,7 @@ const sendApplicationReminder = async () => {
   const defaultMsg = `Sheba Connect: Reminder - Your application for ${service?.name} is ready to submit. Expected completion: ${resolutionAnalytics?.expectedResolution?.mostLikely || 12} days. Reply STOP to unsubscribe.`;
   const message = customSmsMessage.trim() !== '' ? customSmsMessage : defaultMsg;
   
-  await sendSmsNotification(smsPreferences.phoneNumber, message, 'reminder');
+  await sendSmsNotification(smsPhoneNumber, message, 'reminder');
   
   // Clear the custom message box after sending successfully
   if (customSmsMessage.trim() !== '') {
@@ -262,7 +264,7 @@ const sendApplicationReminder = async () => {
 };
 
 const sendStatusUpdate = async (status) => {
-  if (!smsPreferences.enabled || !smsPreferences.phoneNumber || !smsPreferences.statusUpdates) {
+  if (!smsPhoneNumber) {
     return;
   }
 
@@ -276,30 +278,18 @@ const sendStatusUpdate = async (status) => {
 
   const message = statusMessages[status] || `Sheba Connect: Update on your application for ${service?.name}: ${status}`;
   
-  await sendSmsNotification(smsPreferences.phoneNumber, message, 'status_update');
+  await sendSmsNotification(smsPhoneNumber, message, 'status_update');
 };
 
 const sendDocumentAlert = async (docType, status) => {
-  if (!smsPreferences.enabled || !smsPreferences.phoneNumber || !smsPreferences.documentAlerts) {
+  if (!smsPhoneNumber) {
     return;
   }
 
   const message = `Sheba Connect: Document ${DOCUMENT_LABELS[docType]} is now ${status}. Application progress updated.`;
   
-  await sendSmsNotification(smsPreferences.phoneNumber, message, 'document_alert');
+  await sendSmsNotification(smsPhoneNumber, message, 'document_alert');
 };
-
-  const updateSmsPreferences = async (preferences) => {
-    setSmsPreferences(preferences);
-    // Send a real confirmation SMS so the user knows it works
-    if (preferences.phoneNumber) {
-      await sendSmsNotification(
-        preferences.phoneNumber,
-        `Sheba Connect: ✅ SMS notifications activated for your application. You will receive updates on this number.`,
-        'confirmation'
-      );
-    }
-  };
 
 // Check for return from upload page
   useEffect(() => {
@@ -331,21 +321,26 @@ const sendDocumentAlert = async (docType, status) => {
         department:         service.department,
         requiredDocuments:  service.requiredDocuments, // array of doc type keys
         submittedDocuments: uploadedDocuments,     // controller expects submittedDocuments
+        notificationPhone:  smsPhoneNumber,
         additionalInfo:     document.querySelector('textarea')?.value || '',
       };
 
       const response = await axiosAuth.post('/api/service-applications', applicationData);
       
       // Send SMS notification for successful submission
-      if (smsPreferences.enabled && smsPreferences.phoneNumber && smsPreferences.statusUpdates) {
+      if (smsPhoneNumber) {
         await sendStatusUpdate('submitted');
       }
       
-      // Show success message
-      alert('Application submitted successfully! You will receive updates on your application status.');
-      
-      // Navigate back to services
-      navigate('/services');
+      // Redirect back with a toast notification on service page
+      navigate('/services', {
+        state: {
+          toast: {
+            type: 'success',
+            message: 'Application submitted successfully'
+          }
+        }
+      });
     } catch (error) {
       console.error('Error submitting application:', error);
       const backendMessage = error.response?.data?.message;
@@ -355,8 +350,7 @@ const sendDocumentAlert = async (docType, status) => {
       if (missingDocs && missingDocs.length > 0) {
         alertMsg += '\n\nMissing/Unverified:\n- ' + missingDocs.join('\n- ');
       }
-      
-      alert(alertMsg);
+      setToast({ show: true, type: 'error', message: alertMsg });
     } finally {
       setSubmitting(false);
     }
@@ -394,7 +388,7 @@ const sendDocumentAlert = async (docType, status) => {
         return {
           type: 'success',
           title: 'Ready to Apply!',
-          message: 'All required documents are verified. You can proceed with your application.',
+          message: 'All required documents are uploaded in your profile. You can proceed with your application.',
           icon: <FaCheckCircle className="text-green-500" />,
           bgColor: 'bg-green-50',
           borderColor: 'border-green-200',
@@ -403,8 +397,8 @@ const sendDocumentAlert = async (docType, status) => {
       case 'partial':
         return {
           type: 'warning',
-          title: 'Documents Pending Verification',
-          message: `You have uploaded ${uploadedDocuments.length} of ${service?.requiredDocuments.length} required documents. Some documents are still pending verification.`,
+          title: 'Partially Ready',
+          message: `You have uploaded ${uploadedDocuments.length} of ${service?.requiredDocuments.length} required documents.`,
           icon: <FaExclamationTriangle className="text-yellow-500" />,
           bgColor: 'bg-yellow-50',
           borderColor: 'border-yellow-200',
@@ -453,6 +447,13 @@ const sendDocumentAlert = async (docType, status) => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {toast.show && (
+        <div className={`fixed top-4 right-4 z-50 max-w-md px-4 py-2 rounded-lg text-white shadow-lg ${
+          toast.type === 'error' ? 'bg-red-500' : 'bg-green-600'
+        }`}>
+          {toast.message}
+        </div>
+      )}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
         
         {/* Header */}
@@ -747,101 +748,21 @@ const sendDocumentAlert = async (docType, status) => {
                 <FaPhoneAlt className="inline mr-2" />
                 Phone Number for SMS Alerts
               </label>
-              <div className="flex gap-3">
-                <input
-                  type="tel"
-                  placeholder="+8801XXXXXXXXX"
-                  value={smsPreferences.phoneNumber}
-                  onChange={(e) => setSmsPreferences(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <button
-                  onClick={() => updateSmsPreferences(smsPreferences)}
-                  disabled={!smsPreferences.phoneNumber || sendingSms}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {sendingSms ? (
-                    <>
-                      <FaSpinner className="animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck />
-                      Save
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Notification Preferences */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                <FaBell className="inline mr-2" />
-                Notification Types
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={smsPreferences.reminders}
-                    onChange={(e) => setSmsPreferences(prev => ({ ...prev, reminders: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-800">Application Reminders</span>
-                    <p className="text-xs text-gray-600">Get reminded to complete your application</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={smsPreferences.statusUpdates}
-                    onChange={(e) => setSmsPreferences(prev => ({ ...prev, statusUpdates: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-800">Status Updates</span>
-                    <p className="text-xs text-gray-600">Receive updates when your application status changes</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={smsPreferences.documentAlerts}
-                    onChange={(e) => setSmsPreferences(prev => ({ ...prev, documentAlerts: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-800">Document Alerts</span>
-                    <p className="text-xs text-gray-600">Get notified when documents are verified</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={smsPreferences.completionNotice}
-                    onChange={(e) => setSmsPreferences(prev => ({ ...prev, completionNotice: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-800">Completion Notice</span>
-                    <p className="text-xs text-gray-600">Final notification when your service is completed</p>
-                  </div>
-                </label>
-              </div>
+              <input
+                type="tel"
+                placeholder="+8801XXXXXXXXX"
+                value={smsPhoneNumber}
+                onChange={(e) => setSmsPhoneNumber(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
             {/* Test SMS */}
-            {smsPreferences.phoneNumber && (
+            {smsPhoneNumber && (
               <div className="border-t border-gray-200 pt-4">
                 <div className="mb-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Send a Custom Action / Test Message to {smsPreferences.phoneNumber}
+                    Send a demo message to {smsPhoneNumber}
                   </label>
                   <textarea
                     className="w-full p-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-2"

@@ -132,6 +132,7 @@ import AdminApplicationReview from "./pages/admin/AdminApplicationReview";{/* IF
 import IftiAnalytics from "./pages/IftiAnalytics";{/* IFTI */}
 import UserNotifications from "./pages/UserNotifications";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import ServiceApplication from "./pages/ServiceApplication";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -239,6 +240,15 @@ function App() {
           element={
             <PrivateRoute>
               <AnalyticsDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/apply-service/:serviceId"
+          element={
+            <PrivateRoute>
+              <ServiceApplication />
             </PrivateRoute>
           }
         />

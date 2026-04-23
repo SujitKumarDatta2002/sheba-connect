@@ -1,30 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import API from "../../config/api";
-import AdminDepartmentBoard from "../../components/AdminDepartmentBoard";
 
-const FALLBACK_FIELDS = [
-  "nid",
-  "birthCertificate",
-  "passport",
-  "drivingLicense",
-  "tin",
-  "citizenship",
-  "educationalCertificate"
-];
+const STATUS_OPTIONS = ["submitted", "under_review", "approved", "rejected", "requires_additional_info"];
 
 export default function AdminApplicationReview() {
-  const [applications, setApplications] = useState([]);
-  const [groupedData, setGroupedData] = useState({});
-  const [selectedId, setSelectedId] = useState("");
-  const [requestedFields, setRequestedFields] = useState([]);
-  const [deadlines, setDeadlines] = useState({
-    applicationDate: "",
-    documentDate: "",
-    appointmentDate: ""
-  });
   const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingUpdate, setSubmittingUpdate] = useState(false);
+  const [sendingAdminMessage, setSendingAdminMessage] = useState(false);
+  const [applications, setApplications] = useState([]);
+  const [selectedServiceKey, setSelectedServiceKey] = useState("");
+  const [selectedAppId, setSelectedAppId] = useState("");
+  const [status, setStatus] = useState("under_review");
+  const [appointmentDate, setAppointmentDate] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
+  const [adminMessage, setAdminMessage] = useState("");
   const [toast, setToast] = useState({ show: false, type: "success", message: "" });
 
   const showToast = (message, type = "success") => {
@@ -49,7 +39,7 @@ export default function AdminApplicationReview() {
     }
   };
 
-  const fetchPendingApplications = async () => {
+  const fetchServiceApplications = async () => {
     const headers = getHeaders();
     if (!headers) {
       showToast("Session expired. Please log in again", "error");
@@ -63,47 +53,48 @@ export default function AdminApplicationReview() {
 
     setLoading(true);
     try {
-      const [pendingRes, groupedRes] = await Promise.all([
-        axios.get(`${API}/api/applications/pending`, { headers }),
-        axios.get(`${API}/api/applications/by-department`, { headers })
-      ]);
-
-      const data = pendingRes.data || [];
+      const res = await axios.get(`${API}/api/service-applications/admin/all-applications`, { headers });
+      const data = res.data || [];
       setApplications(data);
-
-      const grouped = groupedRes.data?.groupedData || {};
-      setGroupedData(grouped);
-
-      setSelectedId((prev) => {
-        if (prev && data.some((item) => item._id === prev)) {
-          return prev;
-        }
-        return data[0]?._id || "";
-      });
+      const nextServiceKey = data[0]?.serviceId?._id || data[0]?.serviceId || "";
+      setSelectedServiceKey((prev) => prev || nextServiceKey);
     } catch (error) {
-      console.error("Failed to fetch pending applications:", error);
-      showToast(error.response?.data?.message || "Failed to load pending applications", "error");
+      console.error("Failed to fetch service applications:", error);
+      showToast(error.response?.data?.message || "Failed to load service applications", "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPendingApplications();
+    fetchServiceApplications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const selectedApplication = useMemo(
-    () => applications.find((item) => item._id === selectedId),
-    [applications, selectedId]
-  );
+  const groupedByService = useMemo(() => {
+    return applications.reduce((acc, app) => {
+      const serviceId = app.serviceId?._id || app.serviceId;
+      const serviceName = app.serviceName || app.serviceId?.name || "Unknown service";
+      if (!serviceId) return acc;
+      if (!acc[serviceId]) {
+        acc[serviceId] = { serviceId, serviceName, applicants: [] };
+      }
+      acc[serviceId].applicants.push(app);
+      return acc;
+    }, {});
+  }, [applications]);
 
-  const selectableFields = useMemo(() => {
-    if (selectedApplication?.serviceId?.requiredDocuments?.length) {
-      return selectedApplication.serviceId.requiredDocuments;
-    }
-    return FALLBACK_FIELDS;
-  }, [selectedApplication]);
+  const serviceGroups = useMemo(() => Object.values(groupedByService), [groupedByService]);
+
+  const selectedService = useMemo(() => {
+    if (!selectedServiceKey) return null;
+    return groupedByService[selectedServiceKey] || null;
+  }, [groupedByService, selectedServiceKey]);
+
+  const selectedApplication = useMemo(() => {
+    if (!selectedAppId) return null;
+    return applications.find((app) => app._id === selectedAppId) || null;
+  }, [applications, selectedAppId]);
 
   const toYYYYMMDD = (value) => {
     if (!value) return "";
@@ -114,40 +105,27 @@ export default function AdminApplicationReview() {
   };
 
   useEffect(() => {
-    if (selectedApplication) {
-      setRequestedFields(selectedApplication.requestedFields || []);
-      setDeadlines({
-        applicationDate: toYYYYMMDD(selectedApplication.deadlines?.applicationDate),
-        documentDate: toYYYYMMDD(selectedApplication.deadlines?.documentDate),
-        appointmentDate: toYYYYMMDD(selectedApplication.deadlines?.appointmentDate)
+    if (selectedService?.applicants?.length) {
+      const firstId = selectedService.applicants[0]._id;
+      setSelectedAppId((prev) => {
+        if (prev && selectedService.applicants.some((a) => a._id === prev)) {
+          return prev;
+        }
+        return firstId;
       });
     } else {
-      setRequestedFields([]);
-      setDeadlines({
-        applicationDate: "",
-        documentDate: "",
-        appointmentDate: ""
-      });
+      setSelectedAppId("");
     }
+  }, [selectedService]);
+
+  useEffect(() => {
+    if (!selectedApplication) return;
+    setStatus(selectedApplication.status || "under_review");
+    setAppointmentDate(toYYYYMMDD(selectedApplication.appointmentDate));
+    setAdminNotes(selectedApplication.adminNotes || "");
   }, [selectedApplication]);
 
-  const toggleField = (field) => {
-    setRequestedFields((prev) =>
-      prev.includes(field) ? prev.filter((item) => item !== field) : [...prev, field]
-    );
-  };
-
-  const handleSelectApplication = (app) => {
-    if (!app?._id) return;
-    const isInReviewableList = applications.some((item) => item._id === app._id);
-    if (isInReviewableList) {
-      setSelectedId(app._id);
-      return;
-    }
-    showToast("This application is not currently reviewable from this form", "error");
-  };
-
-  const handleSubmit = async (event) => {
+  const handleUpdateApplication = async (event) => {
     event.preventDefault();
 
     const headers = getHeaders();
@@ -156,59 +134,67 @@ export default function AdminApplicationReview() {
       return;
     }
 
-    if (!selectedApplication) {
-      showToast("Please select a valid application before submitting", "error");
-      return;
-    }
-
-    const normalizedRequestedFields = requestedFields
-      .map((field) => String(field).trim())
-      .filter(Boolean);
-
-    if (normalizedRequestedFields.length === 0) {
-      showToast("Please select at least one requested field", "error");
-      return;
-    }
-
-    const payloadDeadlines = {
-      applicationDate: toYYYYMMDD(deadlines.applicationDate),
-      documentDate: toYYYYMMDD(deadlines.documentDate),
-      appointmentDate: toYYYYMMDD(deadlines.appointmentDate)
-    };
-
-    if (!payloadDeadlines.applicationDate || !payloadDeadlines.documentDate || !payloadDeadlines.appointmentDate) {
-      showToast("Please set all three deadlines", "error");
+    if (!selectedApplication?._id) {
+      showToast("Please select an applicant", "error");
       return;
     }
 
     const payload = {
-      requestedFields: normalizedRequestedFields,
-      deadlines: payloadDeadlines
+      status,
+      adminNotes,
+      appointmentDate: appointmentDate || null
     };
 
-    setSubmitting(true);
+    setSubmittingUpdate(true);
     await axios
       .patch(
-        `${API}/api/applications/${selectedApplication._id}/review`,
+        `${API}/api/service-applications/${selectedApplication._id}/status`,
         payload,
         { headers }
       )
       .then(async () => {
-        showToast(
-          selectedApplication.status === "AWAITING_USER_DOCS"
-            ? "Application review updated successfully!"
-            : "Review sent to user successfully!",
-          "success"
-        );
-        await fetchPendingApplications();
+        showToast("Application updated successfully", "success");
+        await fetchServiceApplications();
       })
       .catch((err) => {
         const msg = err.response?.data?.message || err.response?.data || err.message || "Unknown error";
-        showToast("Failed to review: " + msg, "error");
+        showToast("Failed to update: " + msg, "error");
       })
       .finally(() => {
-        setSubmitting(false);
+        setSubmittingUpdate(false);
       });
+  };
+
+  const handleSendAdminMessage = async (event) => {
+    event.preventDefault();
+    const headers = getHeaders();
+    if (!headers) {
+      showToast("Session expired. Please log in again", "error");
+      return;
+    }
+    if (!selectedApplication?._id) {
+      showToast("Please select an applicant", "error");
+      return;
+    }
+    if (!adminMessage.trim()) {
+      showToast("Please type a message", "error");
+      return;
+    }
+
+    setSendingAdminMessage(true);
+    try {
+      await axios.post(
+        `${API}/api/service-applications/${selectedApplication._id}/message`,
+        { message: adminMessage.trim() },
+        { headers }
+      );
+      showToast("Message sent to applicant", "success");
+      setAdminMessage("");
+    } catch (error) {
+      showToast(error.response?.data?.message || "Failed to send message", "error");
+    } finally {
+      setSendingAdminMessage(false);
+    }
   };
 
   return (
@@ -225,121 +211,137 @@ export default function AdminApplicationReview() {
 
       <div className="max-w-6xl mx-auto px-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h1 className="text-2xl font-bold text-gray-800">Admin Application Review</h1>
-          <p className="text-gray-500 mt-1">Review pending or previously reviewed applications.</p>
+          <h1 className="text-2xl font-bold text-gray-800">Service Application Review</h1>
+          <p className="text-gray-500 mt-1">See service-wise applications and manage each applicant.</p>
 
           {loading ? (
             <p className="mt-6 text-gray-600">Loading applications...</p>
-          ) : applications.length === 0 ? (
+          ) : serviceGroups.length === 0 ? (
             <p className="mt-6 text-gray-600">No applications to review.</p>
           ) : (
-            <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <AdminDepartmentBoard
-                groupedData={groupedData}
-                onSelectApplication={handleSelectApplication}
-              />
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Select Application</label>
-                  <select
-                    value={selectedId}
-                    onChange={(e) => setSelectedId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="mt-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {serviceGroups.map((group) => (
+                  <button
+                    key={group.serviceId}
+                    type="button"
+                    onClick={() => setSelectedServiceKey(group.serviceId)}
+                    className={`rounded-xl border p-4 text-left transition ${
+                      selectedServiceKey === group.serviceId
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-gray-200 bg-white hover:border-indigo-300"
+                    }`}
                   >
-                    {applications.map((app) => (
-                      <option key={app._id} value={app._id}>
-                        {app.userId?.name || "User"} - {app.serviceId?.name || "Service"} {app.status === "AWAITING_USER_DOCS" ? "(Reviewed)" : ""}
-                      </option>
-                    ))}
-                  </select>
+                    <p className="font-semibold text-gray-800">{group.serviceName}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {group.applicants.length} applicant{group.applicants.length > 1 ? "s" : ""}
+                    </p>
+                  </button>
+                ))}
+              </div>
+
+              {selectedService && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="rounded-xl border border-gray-200 p-4 bg-white">
+                    <h3 className="text-lg font-semibold text-gray-800">{selectedService.serviceName} Applicants</h3>
+                    <div className="mt-4 space-y-2 max-h-[360px] overflow-auto pr-1">
+                      {selectedService.applicants.map((app) => (
+                        <button
+                          key={app._id}
+                          type="button"
+                          onClick={() => setSelectedAppId(app._id)}
+                          className={`w-full rounded-lg border p-3 text-left transition ${
+                            selectedAppId === app._id
+                              ? "border-indigo-500 bg-indigo-50"
+                              : "border-gray-200 hover:border-indigo-300"
+                          }`}
+                        >
+                          <p className="text-sm font-semibold text-gray-800">{app.userName || app.userId?.name || "User"}</p>
+                          <p className="text-xs text-gray-600">{app.userEmail || app.userId?.email || "N/A"}</p>
+                          <p className="text-xs text-gray-500 mt-1">Status: {app.status}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 p-4 bg-white">
+                    {!selectedApplication ? (
+                      <p className="text-gray-500">Select an applicant to manage.</p>
+                    ) : (
+                      <div className="space-y-5">
+                        <div className="rounded-lg border border-gray-200 p-3 bg-gray-50">
+                          <p className="text-sm"><span className="font-semibold">Applicant:</span> {selectedApplication.userName || selectedApplication.userId?.name || "N/A"}</p>
+                          <p className="text-sm"><span className="font-semibold">Email:</span> {selectedApplication.userEmail || selectedApplication.userId?.email || "N/A"}</p>
+                          <p className="text-sm"><span className="font-semibold">Phone:</span> {selectedApplication.notificationPhone || selectedApplication.userId?.phone || "N/A"}</p>
+                        </div>
+
+                        <form onSubmit={handleUpdateApplication} className="space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select
+                              value={status}
+                              onChange={(e) => setStatus(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            >
+                              {STATUS_OPTIONS.map((option) => (
+                                <option key={option} value={option}>
+                                  {option.replace(/_/g, " ")}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Date</label>
+                            <input
+                              type="date"
+                              value={appointmentDate}
+                              onChange={(e) => setAppointmentDate(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Admin Notes</label>
+                            <textarea
+                              rows={3}
+                              value={adminNotes}
+                              onChange={(e) => setAdminNotes(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            />
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={submittingUpdate}
+                            className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {submittingUpdate ? "Updating..." : "Update Application"}
+                          </button>
+                        </form>
+
+                        <form onSubmit={handleSendAdminMessage} className="space-y-3 border-t pt-4">
+                          <label className="block text-sm font-medium text-gray-700">Send Message</label>
+                          <textarea
+                            rows={3}
+                            value={adminMessage}
+                            onChange={(e) => setAdminMessage(e.target.value)}
+                            placeholder="Type message for this applicant..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                          <button
+                            type="submit"
+                            disabled={sendingAdminMessage}
+                            className="w-full bg-indigo-600 text-white font-medium py-2.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                          >
+                            {sendingAdminMessage ? "Sending..." : "Send Message"}
+                          </button>
+                        </form>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                {selectedApplication && (
-                  <div className="rounded-lg border border-gray-200 p-4 bg-blue-50 border-l-4 border-l-blue-500">
-                    <p className="text-sm text-gray-800 font-medium">Applicant Details</p>
-                    <p className="text-sm text-gray-600 mt-2">
-                      <span className="font-semibold text-gray-700">Name:</span> {selectedApplication.userId?.name}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-semibold text-gray-700">Email:</span> {selectedApplication.userId?.email}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-semibold text-gray-700">Service:</span> {selectedApplication.serviceId?.name}
-                    </p>
-                    <p className="text-sm mt-2">
-                      <span className="font-semibold text-gray-700 mr-2">Status:</span>
-                      <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          selectedApplication.status === "AWAITING_USER_DOCS"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {selectedApplication.status.replace(/_/g, " ")}
-                      </span>
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Requested Fields</label>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                    {selectableFields.map((field) => (
-                      <label key={field} className={`flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer transition-colors ${requestedFields.includes(field) ? "bg-blue-50 border-blue-300 text-blue-800 font-medium" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-                        <input
-                          type="checkbox"
-                          className="rounded text-blue-600 focus:ring-blue-500"
-                          checked={requestedFields.includes(field)}
-                          onChange={() => toggleField(field)}
-                        />
-                        <span>{field}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Application Deadline</label>
-                    <input
-                      type="date"
-                      required
-                      value={deadlines.applicationDate}
-                      onChange={(e) => setDeadlines({ ...deadlines, applicationDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Document Final Date</label>
-                    <input
-                      type="date"
-                      required
-                      value={deadlines.documentDate}
-                      onChange={(e) => setDeadlines({ ...deadlines, documentDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Appointment Date</label>
-                    <input
-                      type="date"
-                      required
-                      value={deadlines.appointmentDate}
-                      onChange={(e) => setDeadlines({ ...deadlines, appointmentDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting || !selectedId}
-                  className="w-full bg-blue-600 text-white font-medium py-3 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? "Saving..." : selectedApplication?.status === "AWAITING_USER_DOCS" ? "Update Review Details" : "Send Review to User"}
-                </button>
-              </form>
+              )}
             </div>
           )}
         </div>
