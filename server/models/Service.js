@@ -46,6 +46,10 @@ const serviceSchema = new mongoose.Schema(
         ]
       }
     ],
+    processSteps: {
+      type: [String],
+      default: []
+    },
     eligibilityCriteria: {
       type: String,
       required: true

@@ -124,9 +124,15 @@ import UploadDocument from "./pages/UploadDocument";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/AdminDashboard"; {/* IFTI */}
+import Dashboard from "./pages/Dashboard";
 import NearbyOffices from "./pages/NearbyOffices"; // 👈 Import new page
 import ServiceManagement from "./pages/admin/ServiceManagement";
+import AdminApplicationReview from "./pages/admin/AdminApplicationReview";{/* IFTI */}
+import IftiAnalytics from "./pages/IftiAnalytics";{/* IFTI */}
+import UserNotifications from "./pages/UserNotifications";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import ServiceApplication from "./pages/ServiceApplication";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -197,12 +203,52 @@ function App() {
           }
         />
 
+        {/* IFTI */}
+        
+        {/* User Dashboard Route */}
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+
         {/* Nearby Offices Route */}
         <Route
           path="/nearby"
           element={
             <PrivateRoute>
               <NearbyOffices />
+            </PrivateRoute>
+          }
+        />
+
+        {/* User Notifications Route */}
+        <Route
+          path="/notifications"
+          element={
+            <PrivateRoute>
+              <UserNotifications />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <PrivateRoute>
+              <AnalyticsDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/apply-service/:serviceId"
+          element={
+            <PrivateRoute>
+              <ServiceApplication />
             </PrivateRoute>
           }
         />
@@ -233,6 +279,34 @@ function App() {
             element={
               <PrivateRoute>
                 <ServiceManagement />
+              </PrivateRoute>
+            }
+          />
+          {/* IFTI */}
+          {/* Service Management Route */}
+          <Route
+            path="/admin/applications"
+            element={
+              <PrivateRoute>
+                <AdminApplicationReview />
+              </PrivateRoute>
+            }
+          />
+          {/* IFTI */}
+          <Route
+            path="/iftianlytics"
+            element={
+              <PrivateRoute>
+                <IftiAnalytics />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/iftianalytics"
+            element={
+              <PrivateRoute>
+                <IftiAnalytics />
               </PrivateRoute>
             }
           />
