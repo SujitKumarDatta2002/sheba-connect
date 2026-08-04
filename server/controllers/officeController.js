@@ -1,142 +1,17 @@
 
-// const Office = require('../models/Office');
 
-// // Haversine formula to calculate distance between two points in km
-// function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-//   const R = 6371; // Earth's radius in km
-//   const dLat = deg2rad(lat2 - lat1);
-//   const dLon = deg2rad(lon2 - lon1);
-//   const a =
-//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-//     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-//     Math.sin(dLon / 2) * Math.sin(dLon / 2);
-//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-//   const d = R * c;
-//   return d;
-// }
-
-// function deg2rad(deg) {
-//   return deg * (Math.PI / 180);
-// }
-
-// // Get offices for a given service, sorted by distance from user
-// exports.getNearbyOffices = async (req, res) => {
-//   try {
-//     const { serviceId, userLat, userLng } = req.query;
-
-//     if (!serviceId || !userLat || !userLng) {
-//       return res.status(400).json({ message: 'Missing required parameters' });
-//     }
-
-//     const offices = await Office.find({ service: serviceId, isActive: true })
-//       .populate('service', 'name department');
-
-//     // Calculate distance for each office
-//     const officesWithDistance = offices.map(office => {
-//       const distance = getDistanceFromLatLonInKm(
-//         parseFloat(userLat),
-//         parseFloat(userLng),
-//         office.latitude,
-//         office.longitude
-//       );
-//       return {
-//         ...office.toObject(),
-//         distance: Math.round(distance * 10) / 10 // round to 1 decimal
-//       };
-//     });
-
-//     // Sort by distance ascending
-//     officesWithDistance.sort((a, b) => a.distance - b.distance);
-
-//     res.json(officesWithDistance);
-//   } catch (error) {
-//     console.error('Error fetching nearby offices:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
-// // Get a single office by ID
-// exports.getOfficeById = async (req, res) => {
-//   try {
-//     const office = await Office.findById(req.params.id).populate('service', 'name department');
-//     if (!office) {
-//       return res.status(404).json({ message: 'Office not found' });
-//     }
-//     res.json(office);
-//   } catch (error) {
-//     console.error('Error fetching office:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
-// // Admin: Create an office
-// exports.createOffice = async (req, res) => {
-//   try {
-//     if (req.user.role !== 'admin') {
-//       return res.status(403).json({ message: 'Admin access required' });
-//     }
-//     const office = new Office(req.body);
-//     await office.save();
-//     res.status(201).json(office);
-//   } catch (error) {
-//     console.error('Error creating office:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
-// // Admin: Update office
-// exports.updateOffice = async (req, res) => {
-//   try {
-//     if (req.user.role !== 'admin') {
-//       return res.status(403).json({ message: 'Admin access required' });
-//     }
-//     const office = await Office.findByIdAndUpdate(req.params.id, req.body, { new: true });
-//     if (!office) {
-//       return res.status(404).json({ message: 'Office not found' });
-//     }
-//     res.json(office);
-//   } catch (error) {
-//     console.error('Error updating office:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
-// // Admin: Delete office
-// exports.deleteOffice = async (req, res) => {
-//   try {
-//     if (req.user.role !== 'admin') {
-//       return res.status(403).json({ message: 'Admin access required' });
-//     }
-//     const office = await Office.findByIdAndDelete(req.params.id);
-//     if (!office) {
-//       return res.status(404).json({ message: 'Office not found' });
-//     }
-//     res.json({ message: 'Office deleted successfully' });
-//   } catch (error) {
-//     console.error('Error deleting office:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// controllers/officeController.js
+// Handles nearby office lookups and admin CRUD for offices.
+// getNearbyOffices is public. All write operations require admin role.
 
 const Office = require('../models/Office');
 
-// ── Haversine distance (km) ───────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPER: Haversine formula
+// Calculates straight-line distance between two lat/lng points in kilometres.
+// ─────────────────────────────────────────────────────────────────────────────
 function getDistanceKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
+  const R    = 6371; // Earth radius in km
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
@@ -145,10 +20,17 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
 function toRad(deg) { return deg * (Math.PI / 180); }
 
-// ── GET /api/offices/nearby ───────────────────────────────────────────────────
-// Returns ALL offices for the service sorted nearest-first. No radius cap.
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/offices/nearby?serviceId=&userLat=&userLng=
+// Returns ALL offices for the service, sorted nearest-first.
+// No radius cap — the frontend handles how many to display.
+//
+// The $or in the query also catches offices where isActive was never set
+// (common when documents are added manually via MongoDB Compass).
+// ─────────────────────────────────────────────────────────────────────────────
 exports.getNearbyOffices = async (req, res) => {
   try {
     const { serviceId, userLat, userLng } = req.query;
@@ -161,11 +43,11 @@ exports.getNearbyOffices = async (req, res) => {
 
     const lat = parseFloat(userLat);
     const lng = parseFloat(userLng);
+
     if (isNaN(lat) || isNaN(lng)) {
-      return res.status(400).json({ message: 'userLat / userLng must be valid numbers' });
+      return res.status(400).json({ message: 'userLat and userLng must be valid numbers' });
     }
 
-    // Match offices even if isActive field is missing (common when added via Compass)
     const offices = await Office.find({
       service: serviceId,
       $or: [
@@ -175,27 +57,33 @@ exports.getNearbyOffices = async (req, res) => {
       ],
     }).populate('service', 'name department');
 
-    console.log('[NearbyOffices] serviceId=%s → %d offices', serviceId, offices.length);
+    console.log('[NearbyOffices] serviceId=%s → %d offices found', serviceId, offices.length);
 
+    // Add distance to each result, then sort nearest-first
     const withDistance = offices.map(o => ({
       ...o.toObject(),
       distance: Math.round(getDistanceKm(lat, lng, o.latitude, o.longitude) * 10) / 10,
     }));
 
     withDistance.sort((a, b) => a.distance - b.distance);
-    res.json(withDistance);
 
+    res.json(withDistance);
   } catch (err) {
     console.error('getNearbyOffices error:', err);
     res.status(500).json({ message: 'Server error', detail: err.message });
   }
 };
 
-// ── DEBUG: GET /api/offices/debug/:serviceId ─────────────────────────────────
-// Remove this route once your data is confirmed correct.
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/offices/debug/:serviceId
+// Diagnostic tool — shows what the DB contains for a serviceId.
+// Helps debug why offices are missing (wrong ObjectId, isActive=false, etc.)
+// REMOVE THIS ROUTE once your data is confirmed correct.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.debugOffices = async (req, res) => {
   try {
-    const sid      = req.params.serviceId;
+    const sid = req.params.serviceId;
+
     const all      = await Office.find({}).populate('service', 'name');
     const matching = await Office.find({ service: sid });
     const active   = await Office.find({ service: sid, isActive: true });
@@ -210,8 +98,8 @@ exports.debugOffices = async (req, res) => {
         missingIsActive:   noField.length,
       },
       allOffices: all.map(o => ({
-        _id: o._id, name: o.name, service: o.service, isActive: o.isActive,
-        lat: o.latitude, lng: o.longitude,
+        _id: o._id, name: o.name, service: o.service,
+        isActive: o.isActive, lat: o.latitude, lng: o.longitude,
       })),
     });
   } catch (err) {
@@ -219,21 +107,35 @@ exports.debugOffices = async (req, res) => {
   }
 };
 
-// ── GET /api/offices/:id ──────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/offices/:id
+// Returns a single office by ID with its service info populated.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.getOfficeById = async (req, res) => {
   try {
-    const office = await Office.findById(req.params.id).populate('service', 'name department');
-    if (!office) return res.status(404).json({ message: 'Office not found' });
+    const office = await Office.findById(req.params.id)
+      .populate('service', 'name department');
+
+    if (!office) {
+      return res.status(404).json({ message: 'Office not found' });
+    }
+
     res.json(office);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// ── Admin: create ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/offices  (Admin only)
+// Creates a new office. isActive defaults to true.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.createOffice = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
     const office = new Office({ isActive: true, ...req.body });
     await office.save();
     res.status(201).json(office);
@@ -242,24 +144,44 @@ exports.createOffice = async (req, res) => {
   }
 };
 
-// ── Admin: update ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/offices/:id  (Admin only)
+// Updates an office record by ID.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.updateOffice = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
     const office = await Office.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!office) return res.status(404).json({ message: 'Office not found' });
+
+    if (!office) {
+      return res.status(404).json({ message: 'Office not found' });
+    }
+
     res.json(office);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// ── Admin: delete ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/offices/:id  (Admin only)
+// Permanently removes an office record from the database.
+// ─────────────────────────────────────────────────────────────────────────────
 exports.deleteOffice = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
     const office = await Office.findByIdAndDelete(req.params.id);
-    if (!office) return res.status(404).json({ message: 'Office not found' });
+
+    if (!office) {
+      return res.status(404).json({ message: 'Office not found' });
+    }
+
     res.json({ message: 'Office deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

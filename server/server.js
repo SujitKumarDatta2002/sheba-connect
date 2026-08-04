@@ -331,6 +331,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/helplines', helplineRoutes);
 
+// Authenticated, voluntary ratings and feedback for government services
+const serviceFeedbackRoutes = require('./routes/serviceFeedbackRoutes');
+app.use('/api/service-feedback', serviceFeedbackRoutes);
+
 // Survey routes
 app.use('/api/surveys', surveyRoutes);
 
