@@ -6,6 +6,10 @@
 
 const Service = require('../models/Service');
 
+// Complaint records remain in the database for the Complaints module, but are
+// excluded from the public government-services directory when requested.
+const complaintEntryPattern = /\b(complaint|garbage|waste collection|road maintenance|road repair|pothole|drainage|streetlight|sewerage|sanitation|water supply issue|encroachment)\b/i;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/services
 // Returns all active services. Supports multiple query filters:
@@ -16,7 +20,7 @@ exports.getServices = async (req, res) => {
   try {
     const {
       department, urgency, minCost, maxCost,
-      processingTime, requiredDocuments, search,
+      processingTime, requiredDocuments, search, excludeComplaints,
     } = req.query;
 
     // Only return active services by default
@@ -45,6 +49,13 @@ exports.getServices = async (req, res) => {
     // requiredDocuments comes as a comma-separated string; match services that require ALL of them
     if (requiredDocuments) {
       filter.requiredDocuments = { $all: requiredDocuments.split(',') };
+    }
+
+    if (excludeComplaints === 'true') {
+      filter.$nor = [
+        { name: { $regex: complaintEntryPattern } },
+        { description: { $regex: complaintEntryPattern } }
+      ];
     }
 
     // Full-text search across service name and description

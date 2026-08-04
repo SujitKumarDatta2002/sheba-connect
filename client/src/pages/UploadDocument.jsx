@@ -8,6 +8,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
+import API from "../config/api";
 import {
   FaUpload, FaFilePdf, FaTimes, FaCheckCircle,
   FaArrowLeft, FaInfoCircle, FaFileAlt, FaShieldAlt,
@@ -100,7 +101,7 @@ export default function UploadDocument() {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
-        const res = await axios.get("http://localhost:5000/api/documents", {
+        const res = await axios.get(`${API}/api/documents`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const found = res.data.find(d => d.documentType === type);
@@ -180,7 +181,7 @@ export default function UploadDocument() {
 
     try {
       setLoading(true);
-      await axios.post("http://localhost:5000/api/documents", formData, {
+      await axios.post(`${API}/api/documents`, formData, {
         headers: {
           "Content-Type":  "multipart/form-data",
           "Authorization": `Bearer ${token}`,
@@ -208,7 +209,7 @@ export default function UploadDocument() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/documents/${existingDocument._id}`, {
+      await axios.delete(`${API}/api/documents/${existingDocument._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setExistingDocument(null);
@@ -225,7 +226,7 @@ export default function UploadDocument() {
     try {
       const token    = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:5000/api/documents/${existingDocument._id}/download`,
+        `${API}/api/documents/${existingDocument._id}/download`,
         { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
       );
       const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
@@ -241,7 +242,7 @@ export default function UploadDocument() {
     try {
       const token    = localStorage.getItem("token");
       const response = await axios.get(
-        `http://localhost:5000/api/documents/${existingDocument._id}/download`,
+        `${API}/api/documents/${existingDocument._id}/download`,
         { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
       );
       const url  = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));

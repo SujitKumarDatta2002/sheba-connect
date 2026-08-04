@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import axiosAuth from '../config/axiosInstance';
 import {
   FaSearch, FaFilter, FaPhone, FaTimes, FaChevronDown,
   FaExclamationTriangle, FaAmbulance, FaFire, FaShieldAlt,
   FaBolt, FaRoad, FaHospital, FaSchool, FaCity, FaGlobe,
-  FaExternalLinkAlt, FaInfoCircle, FaDollarSign
+  FaExternalLinkAlt, FaInfoCircle, FaDollarSign, FaPaperPlane, FaCommentAlt,
+  FaStar, FaRegStar
 } from 'react-icons/fa';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -45,6 +47,19 @@ var EMPTY_FILTERS = {
   processingTime: '', requiredDocuments: [], search: ''
 };
 var costFormatter = new Intl.NumberFormat('bn-BD', { style: 'currency', currency: 'BDT' });
+
+// Complaint records are kept in the database for the Complaints module but do
+// not belong in this citizen-services directory. This client-side guard keeps
+// the page clean even when it is connected to an older backend deployment.
+var COMPLAINT_ENTRY_PATTERN = /\b(complaint|garbage|waste collection|road maintenance|road repair|pothole|drainage|streetlight|sewerage|sanitation|water supply issue|encroachment)\b/i;
+
+function isComplaintEntry(service) {
+  return COMPLAINT_ENTRY_PATTERN.test([
+    service.name || '',
+    service.description || '',
+    service.department || ''
+  ].join(' '));
+}
 
 var DEPT_COLOR = {
   'Passport Office':    { bg: '#EEEDFE', stroke: '#534AB7', text: '#534AB7' },
@@ -270,6 +285,67 @@ function ActionBtn(props) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function FeedbackModal(props) {
+  var service = props.service;
+  var onClose = props.onClose;
+  var onSubmitted = props.onSubmitted;
+  var ratingState = useState(null);
+  var rating = ratingState[0];
+  var setRating = ratingState[1];
+  var tagsState = useState([]);
+  var tags = tagsState[0];
+  var setTags = tagsState[1];
+  var commentState = useState('');
+  var comment = commentState[0];
+  var setComment = commentState[1];
+  var submittingState = useState(false);
+  var submitting = submittingState[0];
+  var setSubmitting = submittingState[1];
+  var errorState = useState('');
+  var error = errorState[0];
+  var setError = errorState[1];
+  var feedbackTags = ['Good', 'Average', 'Bad', 'Helpful staff', 'Slow process'];
+
+  function toggleTag(tag) {
+    setTags(function(previousTags) {
+      var selected = previousTags.indexOf(tag) !== -1;
+      setComment(function(previousComment) {
+        if (selected || previousComment.indexOf(tag) !== -1) return previousComment;
+        return previousComment ? previousComment + ', ' + tag : tag + ', ';
+      });
+      return selected ? previousTags.filter(function(item) { return item !== tag; }) : previousTags.concat(tag);
+    });
+  }
+
+  function submitFeedback(event) {
+    event.preventDefault();
+    setError('');
+    setSubmitting(true);
+    axiosAuth.post('/api/service-feedback', { serviceId: service._id, rating: rating, tags: tags, comment: comment })
+      .then(function() { onSubmitted(); onClose(); })
+      .catch(function(requestError) { setError(requestError.response?.data?.message || 'Could not submit feedback. Please try again.'); })
+      .finally(function() { setSubmitting(false); });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+      <form onSubmit={submitFeedback} className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
+          <div><p className="text-sm font-semibold text-blue-600">Service feedback</p><h2 id="feedback-title" className="mt-1 text-xl font-bold text-gray-900">{service.name}</h2><p className="mt-1 text-sm text-gray-500">Share your experience — every field is optional.</p></div>
+          <button type="button" onClick={onClose} className="p-2 -mr-2 text-gray-400 hover:text-gray-700 rounded-lg" aria-label="Close feedback form"><FaTimes /></button>
+        </div>
+        <div className="px-6 py-5 space-y-5">
+          <div><p className="mb-2 text-sm font-medium text-gray-700">Rating <span className="font-normal text-gray-400">(optional)</span></p><div className="flex gap-1" aria-label="Choose a rating from 1 to 5">{[1, 2, 3, 4, 5].map(function(star) { var selected = rating !== null && star <= rating; return <button key={star} type="button" onClick={function() { setRating(rating === star ? null : star); }} className="p-1 text-2xl text-amber-400 hover:scale-110 transition-transform" aria-label={star + ' star' + (star > 1 ? 's' : '')}>{selected ? <FaStar /> : <FaRegStar />}</button>; })}</div></div>
+          <div><p className="mb-2 text-sm font-medium text-gray-700">Quick feedback</p><div className="flex flex-wrap gap-2">{feedbackTags.map(function(tag) { var selected = tags.indexOf(tag) !== -1; return <button key={tag} type="button" onClick={function() { toggleTag(tag); }} className={'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ' + (selected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100')}>{tag}</button>; })}</div></div>
+          <div><label htmlFor="service-feedback-comment" className="text-sm font-medium text-gray-700">Your experience <span className="font-normal text-gray-400">(optional)</span></label><textarea id="service-feedback-comment" value={comment} onChange={function(event) { setComment(event.target.value); }} maxLength="2000" rows="4" placeholder="Tell us about your experience..." className="w-full px-3 py-2.5 mt-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t border-gray-100"><button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">Cancel</button><button type="submit" disabled={submitting} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-60">{submitting ? 'Submitting...' : 'Submit feedback'}</button></div>
+      </form>
+    </div>
+  );
+}
+
 export default function Services() {
   var activeTabState = useState('services');
   var activeTab = activeTabState[0];
@@ -303,6 +379,19 @@ export default function Services() {
   var helplineCategory = helplineCategoryState[0];
   var setHelplineCategory = helplineCategoryState[1];
 
+  var feedbackServiceState = useState(null);
+  var feedbackService = feedbackServiceState[0];
+  var setFeedbackService = feedbackServiceState[1];
+
+  var feedbackSuccessState = useState(false);
+  var feedbackSuccess = feedbackSuccessState[0];
+  var setFeedbackSuccess = feedbackSuccessState[1];
+
+  function showFeedbackSuccess() {
+    setFeedbackSuccess(true);
+    window.setTimeout(function() { setFeedbackSuccess(false); }, 3500);
+  }
+
   var fetchServices = useCallback(function() {
     setLoading(true);
     var params = new URLSearchParams();
@@ -314,8 +403,9 @@ export default function Services() {
         params.append(k, v);
       }
     });
-    axios.get('http://localhost:5000/api/services?' + params.toString())
-      .then(function(res) { setServices(res.data); })
+    params.set('excludeComplaints', 'true');
+    axiosAuth.get('/api/services?' + params.toString())
+      .then(function(res) { setServices((res.data || []).filter(function(service) { return !isComplaintEntry(service); })); })
       .catch(function(err) { console.error('Error fetching services:', err); })
       .finally(function() { setLoading(false); });
   }, [filters]);
@@ -324,7 +414,7 @@ export default function Services() {
     var params = new URLSearchParams();
     if (helplineCategory) params.append('category', helplineCategory);
     if (helplineSearch)   params.append('search',   helplineSearch);
-    axios.get('http://localhost:5000/api/helplines?' + params.toString())
+    axiosAuth.get('/api/helplines?' + params.toString())
       .then(function(res) { setHelplines(res.data); })
       .catch(function(err) { console.error('Error fetching helplines:', err); });
   }, [helplineCategory, helplineSearch]);
@@ -527,7 +617,7 @@ export default function Services() {
                     <div
                       key={service._id}
                       className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:border-gray-300 hover:shadow-md"
-                      style={{ height: '420px' }}
+                      style={{ minHeight: '470px' }}
                     >
                       {/* Card header */}
                       <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex-shrink-0">
@@ -589,6 +679,20 @@ export default function Services() {
                         <ActionBtn href={callHref}        bg="#EAF3DE" color="#27500A" IconComp={IconPhone} label="Call"    disabled={!service.helpline} />
                         <ActionBtn href={mailtoHref}      bg="#EEEDFE" color="#26215C" IconComp={IconMail}  label="Email"  disabled={!service.email} />
                         <ActionBtn to={mapTo}             bg="#FCEBEB" color="#791F1F" IconComp={IconMap}   label="Map" />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 px-3 pb-3 flex-shrink-0">
+                        <Link
+                          to={'/apply-service/' + service._id}
+                          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-600 text-white font-semibold transition-colors hover:bg-blue-700"
+                        >
+                          <FaPaperPlane className="w-4 h-4" />
+                          Apply
+                        </Link>
+                        <button type="button" onClick={function() { setFeedbackService(service); }} className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-50 text-blue-700 font-semibold transition-colors hover:bg-blue-100">
+                          <FaCommentAlt className="w-4 h-4" />
+                          Feedback
+                        </button>
                       </div>
                     </div>
                   );
@@ -706,6 +810,13 @@ export default function Services() {
         )}
 
       </div>
+      {feedbackService && <FeedbackModal service={feedbackService} onSubmitted={showFeedbackSuccess} onClose={function() { setFeedbackService(null); }} />}
+      {feedbackSuccess && (
+        <div className="fixed right-4 top-4 z-[60] flex items-center gap-3 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg" role="status">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20">✓</span>
+          Feedback submitted. Thank you for sharing your experience.
+        </div>
+      )}
     </div>
   );
 }
