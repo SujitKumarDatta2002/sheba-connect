@@ -5,7 +5,7 @@ const Service = require('../models/Service');
 const ServiceFeedback = require('../models/ServiceFeedback');
 
 const router = express.Router();
-const allowedTags = ['Good', 'Average', 'Bad', 'Helpful staff', 'Slow process'];
+const allowedTags = ['⚡ Quick Service', '👨‍💼 Helpful Staff', '😐 Average Experience', '⏳ Long Waiting Time', '👎 Poor Service'];
 
 // Feedback is voluntary: rating, tags, and comment are all optional.
 router.post('/', authMiddleware, async (req, res) => {

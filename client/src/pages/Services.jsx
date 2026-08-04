@@ -304,17 +304,37 @@ function FeedbackModal(props) {
   var errorState = useState('');
   var error = errorState[0];
   var setError = errorState[1];
-  var feedbackTags = ['Good', 'Average', 'Bad', 'Helpful staff', 'Slow process'];
+  var feedbackTags = [
+    '⚡ Quick Service',
+    '👨‍💼 Helpful Staff',
+    '😐 Average Experience',
+    '⏳ Long Waiting Time',
+    '👎 Poor Service'
+  ];
+
+  function quickFeedbackText(tag) {
+    return tag.replace(/^[^A-Za-z]+/, '').trim();
+  }
 
   function toggleTag(tag) {
-    setTags(function(previousTags) {
-      var selected = previousTags.indexOf(tag) !== -1;
-      setComment(function(previousComment) {
-        if (selected || previousComment.indexOf(tag) !== -1) return previousComment;
-        return previousComment ? previousComment + ', ' + tag : tag + ', ';
-      });
-      return selected ? previousTags.filter(function(item) { return item !== tag; }) : previousTags.concat(tag);
+    var isSelected = tags.indexOf(tag) !== -1;
+    var nextTags = isSelected
+      ? tags.filter(function(selectedTag) { return selectedTag !== tag; })
+      : tags.concat(tag);
+
+    setComment(function(previousComment) {
+      var commentWithoutQuickFeedback = feedbackTags.reduce(function(updatedComment, feedbackTag) {
+        var feedbackText = quickFeedbackText(feedbackTag);
+        return updatedComment.replaceAll(feedbackText + ', ', '').replaceAll(feedbackText, '');
+      }, previousComment);
+      var quickFeedbackComment = nextTags.map(quickFeedbackText).join(', ');
+
+      return quickFeedbackComment
+        ? quickFeedbackComment + ', ' + commentWithoutQuickFeedback
+        : commentWithoutQuickFeedback;
     });
+
+    setTags(nextTags);
   }
 
   function submitFeedback(event) {
@@ -336,7 +356,7 @@ function FeedbackModal(props) {
         </div>
         <div className="px-6 py-5 space-y-5">
           <div><p className="mb-2 text-sm font-medium text-gray-700">Rating <span className="font-normal text-gray-400">(optional)</span></p><div className="flex gap-1" aria-label="Choose a rating from 1 to 5">{[1, 2, 3, 4, 5].map(function(star) { var selected = rating !== null && star <= rating; return <button key={star} type="button" onClick={function() { setRating(rating === star ? null : star); }} className="p-1 text-2xl text-amber-400 hover:scale-110 transition-transform" aria-label={star + ' star' + (star > 1 ? 's' : '')}>{selected ? <FaStar /> : <FaRegStar />}</button>; })}</div></div>
-          <div><p className="mb-2 text-sm font-medium text-gray-700">Quick feedback</p><div className="flex flex-wrap gap-2">{feedbackTags.map(function(tag) { var selected = tags.indexOf(tag) !== -1; return <button key={tag} type="button" onClick={function() { toggleTag(tag); }} className={'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ' + (selected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100')}>{tag}</button>; })}</div></div>
+          <div><p className="mb-2 text-sm font-medium text-gray-700">Quick feedback <span className="font-normal text-gray-400">(select all that apply)</span></p><div className="flex flex-wrap gap-2">{feedbackTags.map(function(tag) { var selected = tags.indexOf(tag) !== -1; return <button key={tag} type="button" onClick={function() { toggleTag(tag); }} aria-pressed={selected} className={'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ' + (selected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100')}>{tag}</button>; })}</div></div>
           <div><label htmlFor="service-feedback-comment" className="text-sm font-medium text-gray-700">Your experience <span className="font-normal text-gray-400">(optional)</span></label><textarea id="service-feedback-comment" value={comment} onChange={function(event) { setComment(event.target.value); }} maxLength="2000" rows="4" placeholder="Tell us about your experience..." className="w-full px-3 py-2.5 mt-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>

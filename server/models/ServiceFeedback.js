@@ -23,7 +23,7 @@ const serviceFeedbackSchema = new mongoose.Schema(
     tags: {
       type: [{
         type: String,
-        enum: ['Good', 'Average', 'Bad', 'Helpful staff', 'Slow process']
+        enum: ['⚡ Quick Service', '👨‍💼 Helpful Staff', '😐 Average Experience', '⏳ Long Waiting Time', '👎 Poor Service']
       }],
       default: []
     },
