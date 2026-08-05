@@ -10,7 +10,7 @@ const Survey = require('../models/Survey');
 const Service = require('../models/Service');
 const Helpline = require('../models/Helpline');
 const Appointment = require('../models/Appointment');
-
+const Notification = require('../models/Notification'); 
 
 
 
@@ -807,6 +807,209 @@ router.get('/surveys', async (req, res) => {
     res.json(surveys);
   } catch (error) {
     console.error('Error fetching surveys:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+// ============================================
+// CONSULTATION MANAGEMENT (Video)
+// ============================================
+
+// Get all consultation requests (admin)
+router.get('/consultations', async (req, res) => {
+  try {
+    const consultations = await Appointment.find({
+      requestType: 'consultation'
+    })
+      .populate('userId', 'name email phone')
+      .populate('adminId', 'name email')
+      .sort({ createdAt: -1 });
+    res.json(consultations);
+  } catch (error) {
+    console.error('Error fetching consultations:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Approve consultation request (generates meeting link)
+// router.put('/consultations/:id/approve', async (req, res) => {
+//   try {
+//     const appointment = await Appointment.findById(req.params.id).populate('userId', 'name email');
+//     if (!appointment) {
+//       return res.status(404).json({ message: 'Consultation request not found' });
+//     }
+
+//     // Generate unique room name using Jitsi Meet
+//     const roomName = `shebaconnect-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+//     const meetingLink = `https://meet.jit.si/${roomName}`;
+
+//     appointment.status = 'Scheduled';
+//     appointment.meetingLink = meetingLink;
+//     appointment.adminId = req.user.userId;
+//     await appointment.save();
+
+//     // Create notification for user (wrap in try-catch to avoid failing the request)
+//     try {
+//       await Notification.create({
+//         userId: appointment.userId._id,
+//         title: 'Consultation Approved',
+//         message: `Your consultation request for "${appointment.serviceName || 'video consultation'}" has been approved. Meeting link: ${meetingLink}`,
+//         category: 'APPOINTMENT'
+//       });
+//     } catch (notifErr) {
+//       console.error('Failed to create user notification:', notifErr);
+//     }
+
+//     // Notify admin (optional)
+//     try {
+//       await Notification.create({
+//         userId: req.user.userId,
+//         title: 'Consultation Approved',
+//         message: `You approved consultation for ${appointment.userId?.name || 'user'}. Meeting link: ${meetingLink}`,
+//         category: 'APPOINTMENT'
+//       });
+//     } catch (notifErr) {
+//       console.error('Failed to create admin notification:', notifErr);
+//     }
+
+//     res.json({ message: 'Consultation approved', meetingLink });
+//   } catch (error) {
+//     console.error('Error approving consultation:', error);
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+// In adminRoutes.js, inside the approve route:
+router.put('/consultations/:id/approve', async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id).populate('userId');
+    if (!appointment) {
+      return res.status(404).json({ message: 'Consultation request not found' });
+    }
+
+    const roomName = `shebaconnect-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const meetingLink = `https://meet.jit.si/${roomName}`;
+
+    appointment.status = 'Scheduled';
+    appointment.meetingLink = meetingLink;
+    appointment.adminId = req.user.userId;
+    await appointment.save();
+
+    // 🔹 Create notification for user with full details
+    await Notification.create({
+      userId: appointment.userId,
+      title: 'Consultation Approved',
+      message: `Your consultation request for "${appointment.serviceName || 'video consultation'}" has been approved.`,
+      category: 'APPOINTMENT',
+      type: 'consultation',                    // <-- key for frontend
+      appointmentId: appointment._id,
+      meetingLink: meetingLink,
+      serviceName: appointment.serviceName || 'Video Consultation',
+      scheduledDate: appointment.appointmentDate,
+      scheduledTime: appointment.appointmentTime,
+    });
+
+    // Optional admin notification
+    await Notification.create({
+      userId: req.user.userId,
+      title: 'Consultation Approved',
+      message: `You approved consultation for ${appointment.userId?.name || 'user'}. Meeting link: ${meetingLink}`,
+      category: 'APPOINTMENT',
+      type: 'consultation',
+      appointmentId: appointment._id,
+      meetingLink: meetingLink,
+      serviceName: appointment.serviceName || 'Video Consultation',
+    });
+
+    res.json({ message: 'Consultation approved', meetingLink });
+  } catch (error) {
+    console.error('Error approving consultation:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Reject consultation request
+router.put('/consultations/:id/reject', async (req, res) => {
+  try {
+    const { note } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Consultation request not found' });
+    }
+
+    appointment.status = 'Cancelled';
+    appointment.notes = note || 'Rejected by admin';
+    await appointment.save();
+
+    try {
+      await Notification.create({
+        userId: appointment.userId,
+        title: 'Consultation Rejected',
+        message: `Your consultation request for "${appointment.serviceName || 'video consultation'}" has been rejected. Reason: ${note || 'No reason provided'}`,
+        category: 'APPOINTMENT'
+      });
+    } catch (notifErr) {
+      console.error('Failed to create notification:', notifErr);
+    }
+
+    res.json({ message: 'Consultation rejected' });
+  } catch (error) {
+    console.error('Error rejecting consultation:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Reschedule consultation request
+router.put('/consultations/:id/reschedule', async (req, res) => {
+  try {
+    const { newDate, newTime, note } = req.body;
+    if (!newDate || !newTime) {
+      return res.status(400).json({ message: 'New date and time are required' });
+    }
+
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Consultation request not found' });
+    }
+
+    appointment.appointmentDate = new Date(newDate);
+    appointment.appointmentTime = newTime;
+    appointment.status = 'Rescheduled';
+    appointment.notes = note || 'Rescheduled by admin';
+    await appointment.save();
+
+    try {
+      await Notification.create({
+        userId: appointment.userId,
+        title: 'Consultation Rescheduled',
+        message: `Your consultation has been rescheduled to ${new Date(newDate).toLocaleDateString()} at ${newTime}. ${note ? 'Note: ' + note : ''}`,
+        category: 'APPOINTMENT'
+      });
+    } catch (notifErr) {
+      console.error('Failed to create notification:', notifErr);
+    }
+
+    res.json({ message: 'Consultation rescheduled' });
+  } catch (error) {
+    console.error('Error rescheduling consultation:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get all consultation requests (admin) - including legacy entries
+router.get('/consultations', async (req, res) => {
+  try {
+    const consultations = await Appointment.find({
+      $or: [
+        { requestType: 'consultation' },
+        { requestType: { $exists: false }, serviceName: { $ne: null, $ne: '' } }
+      ]
+    })
+      .populate('userId', 'name email phone')
+      .populate('adminId', 'name email')
+      .sort({ createdAt: -1 });
+    res.json(consultations);
+  } catch (error) {
+    console.error('Error fetching consultations:', error);
     res.status(500).json({ message: error.message });
   }
 });
