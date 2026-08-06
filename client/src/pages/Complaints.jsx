@@ -4671,11 +4671,11 @@ ${lang === "en" ? "Date" : "তারিখ"}: ${new Date().toLocaleDateString()
     <div className="min-h-screen bg-gray-50">
 
       {/* ── PAGE HEADER ─────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-slate-900 to-blue-900 text-white px-8 py-10">
+      <div className="bg-gradient-to-br from-[#213126] to-[#354D39] text-[#FEE8C8] px-6 py-7 border-b border-[#769E7C]/30">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="w-14 h-14 bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center border border-white/20">
+              <div className="w-11 h-11 bg-[#769E7C]/20 backdrop-blur rounded-xl flex items-center justify-center border border-[#9DC8B9]/30">
                 <FaClipboardList className="text-2xl text-white" />
               </div>
               <div>
@@ -4688,7 +4688,7 @@ ${lang === "en" ? "Date" : "তারিখ"}: ${new Date().toLocaleDateString()
             </div>
             <button
               onClick={() => { setShowForm(true); setShowSolutions(true); }}
-              className="bg-white text-blue-900 px-7 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all flex items-center gap-2 shadow-lg text-sm self-start md:self-auto"
+              className="bg-gradient-to-r from-[#EAB29F] to-[#D99A85] text-[#293B2C] border border-[#EAB29F] px-7 py-3 rounded-xl font-bold hover:brightness-110 transition-all flex items-center gap-2 shadow-lg text-sm self-start md:self-auto"
             >
               <FaPlus /> File New Complaint
             </button>

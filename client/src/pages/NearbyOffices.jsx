@@ -427,7 +427,7 @@ export default function NearbyOffices() {
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-800 to-blue-600 text-white">
         <div className="absolute -top-28 -right-20 w-80 h-80 rounded-full bg-cyan-300/15 blur-3xl" />
         <div className="absolute -bottom-24 left-1/4 w-64 h-64 rounded-full bg-blue-300/10 blur-3xl" />
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-9">
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-7">
 
           {/* Back button */}
           <button

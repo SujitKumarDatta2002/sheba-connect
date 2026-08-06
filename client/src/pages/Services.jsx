@@ -1597,14 +1597,14 @@ export default function Services() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header with global consultation button */}
-        <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl shadow-lg p-8 text-white flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-7 bg-gradient-to-r from-[#354D39] to-[#213126] rounded-2xl shadow-lg p-6 text-[#FEE8C8] border border-[#769E7C]/30 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold mb-2">Service &amp; Helpline Directory</h1>
             <p className="text-blue-100 text-lg">Find government services and emergency contact numbers easily</p>
           </div>
           <button
             onClick={function() { setShowConsultationModal(true); }}
-            className="bg-white text-blue-800 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all flex items-center gap-2 shadow-lg text-sm whitespace-nowrap"
+            className="bg-[#9DC8B9] text-[#293B2C] border border-[#9DC8B9] px-6 py-3 rounded-xl font-bold hover:bg-[#B5D8CC] transition-all flex items-center gap-2 shadow-lg text-sm whitespace-nowrap"
           >
             <FaVideo /> Request Consultation
           </button>
@@ -1778,7 +1778,7 @@ export default function Services() {
                               <path d="M4.5 6.5h5M4.5 9h3" stroke={dept.stroke} strokeWidth="1.1" strokeLinecap="round"/>
                             </svg>
                           </span>
-                          <span className="text-xs font-medium truncate" style={{ color: dept.text }}>{service.department}</span>
+                          <span className="text-xs font-semibold truncate text-[#9DC8B9]">{service.department}</span>
                           <span className="ml-auto text-xs font-medium px-2.5 py-0.5 rounded-full flex-shrink-0" style={{ background: urg.bg, color: urg.text }}>{urg.label}</span>
                         </div>
                         <h3 className="text-sm font-semibold text-gray-800 leading-snug truncate">{service.name}</h3>
@@ -1788,10 +1788,10 @@ export default function Services() {
                       {/* Card body */}
                       <div className="px-4 py-3 flex flex-col gap-2.5 flex-1 overflow-hidden">
                         <MetaRow iconBg="#EAF3DE" icon={IconClock} label="Processing">
-                          <span className="text-xs font-medium text-gray-700">{service.processingTime}</span>
+                          <span className="text-sm font-bold text-[#9DC8B9]">{service.processingTime}</span>
                         </MetaRow>
                         <MetaRow iconBg="#E1F5EE" icon={IconPerson} label="Eligibility">
-                          <span className="text-xs font-medium text-gray-700 line-clamp-1">{service.eligibilityCriteria}</span>
+                          <span className="text-xs font-medium text-[#9DC8B9]/70 line-clamp-1">{service.eligibilityCriteria}</span>
                         </MetaRow>
                         {service.location && (
                           <MetaRow iconBg="#FBEAF0" icon={IconPin} label="Location">
@@ -1817,7 +1817,7 @@ export default function Services() {
                           </div>
                         </MetaRow>
                         <MetaRow iconBg="#E1F5EE" icon={IconCheck} label="Cost">
-                          <span className="text-sm font-semibold" style={{ color: '#0F6E56' }}>
+                          <span className="text-base font-black text-[#EAB29F]">
                             {costFormatter.format(service.cost)}
                           </span>
                         </MetaRow>
@@ -1834,12 +1834,12 @@ export default function Services() {
                       <div className="grid grid-cols-2 gap-2 px-3 pb-3 flex-shrink-0">
                         <Link
                           to={'/apply-service/' + service._id}
-                          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-600 text-white font-semibold transition-colors hover:bg-blue-700"
+                          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-[#EAB29F] to-[#D99A85] text-[#293B2C] font-bold transition-all hover:brightness-110 shadow-md"
                         >
                           <FaPaperPlane className="w-4 h-4" />
                           Apply
                         </Link>
-                        <button type="button" onClick={function() { setFeedbackService(service); }} className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-blue-50 text-blue-700 font-semibold transition-colors hover:bg-blue-100">
+                        <button type="button" onClick={function() { setFeedbackService(service); }} className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#3A4A3A] text-[#9DC8B9] border border-[#9DC8B9]/45 font-bold transition-all hover:bg-[#9DC8B9] hover:text-[#293B2C] hover:-translate-y-0.5">
                           <FaCommentAlt className="w-4 h-4" />
                           Feedback
                         </button>
@@ -1893,39 +1893,39 @@ export default function Services() {
                   var s = CATEGORY_STYLES[helpline.category] || CATEGORY_STYLES.default;
                   var Icon = s.icon;
                   return (
-                    <div key={helpline._id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:border-gray-300 hover:shadow-md">
+                    <div key={helpline._id} className="bg-[#3A4A3A] border border-[#9DC8B9]/25 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:border-[#769E7C] hover:-translate-y-1 hover:shadow-xl">
 
                       {/* Colored header */}
-                      <div className="flex items-center gap-3 px-4 py-4 flex-shrink-0" style={{ background: s.hdrBg }}>
+                      <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0 bg-[#344A38] border-b border-[#9DC8B9]/15">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: s.iconBg }}>
                           <Icon className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold text-gray-800 truncate">{helpline.name}</h3>
-                          <p className="text-xs font-medium mt-0.5" style={{ color: s.catText }}>{helpline.category}</p>
+                          <p className="text-xs font-semibold mt-1 text-[#9DC8B9]">{helpline.category}</p>
                         </div>
                         <div className="flex flex-col gap-1 flex-shrink-0">
                           {helpline.isEmergency && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: '#FCEBEB', color: '#791F1F' }}>Emergency</span>
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#EAB29F]/15 text-[#EAB29F] border border-[#EAB29F]/30">Emergency</span>
                           )}
                           {helpline.available24x7 && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: '#EAF3DE', color: '#27500A' }}>24/7</span>
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#769E7C]/20 text-[#9DC8B9] border border-[#769E7C]/35">24/7</span>
                           )}
                         </div>
                       </div>
 
                       {/* Numbers */}
                       <div className="px-4 pt-3 pb-2 flex flex-col gap-2">
-                        <p className="text-xs font-medium tracking-widest text-gray-400">CONTACT</p>
+                        <p className="text-xs font-bold tracking-widest text-[#9DC8B9]/65">CONTACT</p>
                         {helpline.numbers.map(function(num, i) {
                           var telHref = 'tel:' + num;
                           return (
-                            <a key={i} href={telHref} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-opacity hover:opacity-80 group" style={{ background: s.numBg }}>
+                            <a key={i} href={telHref} className="flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all group bg-[#405644] border border-[#9DC8B9]/20 hover:border-[#9DC8B9]/55 hover:bg-[#465E4A]">
                               <svg viewBox="0 0 14 14" fill="none" width="13" height="13" style={{ flexShrink: 0 }}>
-                                <path d="M2.5 2.5h3l1 3-1.5 1A7 7 0 008.5 10l1-1.5 3 1V12c0 .6-.5 1-1 1C4 13 1 10 1 5.5c0-.5.5-1 1-1l.5-2z" stroke={s.numStroke} strokeWidth="1.2"/>
+                                <path d="M2.5 2.5h3l1 3-1.5 1A7 7 0 008.5 10l1-1.5 3 1V12c0 .6-.5 1-1 1C4 13 1 10 1 5.5c0-.5.5-1 1-1l.5-2z" stroke="#9DC8B9" strokeWidth="1.2"/>
                               </svg>
-                              <span className="text-sm font-semibold flex-1" style={{ color: s.numText }}>{num}</span>
-                              <FaExternalLinkAlt className="w-2.5 h-2.5 opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: s.numText }} />
+                              <span className="text-base font-bold flex-1 text-[#FEE8C8]">{num}</span>
+                              <FaExternalLinkAlt className="w-3 h-3 text-[#9DC8B9] opacity-50 group-hover:opacity-100 transition-opacity" />
                             </a>
                           );
                         })}
@@ -1934,10 +1934,10 @@ export default function Services() {
                       {/* Website */}
                       {helpline.website && (
                         <div className="px-4 pb-2">
-                          <a href={helpline.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition group">
-                            <FaGlobe className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                            <span className="text-xs font-medium text-gray-600 flex-1 truncate">Visit official website</span>
-                            <FaExternalLinkAlt className="w-2.5 h-2.5 text-gray-400 opacity-0 group-hover:opacity-100 transition" />
+                          <a href={helpline.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[#344A38] border border-[#9DC8B9]/15 hover:border-[#9DC8B9]/40 transition group">
+                            <FaGlobe className="w-3.5 h-3.5 text-[#9DC8B9] flex-shrink-0" />
+                            <span className="text-xs font-semibold text-[#9DC8B9] flex-1 truncate">Visit official website</span>
+                            <FaExternalLinkAlt className="w-2.5 h-2.5 text-[#9DC8B9] opacity-50 group-hover:opacity-100 transition" />
                           </a>
                         </div>
                       )}
@@ -1945,8 +1945,8 @@ export default function Services() {
                       {/* Description */}
                       {helpline.description && (
                         <div className="px-4 pb-3">
-                          <p className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg leading-relaxed line-clamp-2">
-                            <FaInfoCircle className="inline mr-1 text-gray-400" />
+                          <p className="text-xs text-[#9DC8B9]/75 bg-[#344A38] border border-[#9DC8B9]/10 px-3 py-2.5 rounded-lg leading-relaxed line-clamp-2">
+                            <FaInfoCircle className="inline mr-1 text-[#EAB29F]" />
                             {helpline.description}
                           </p>
                         </div>

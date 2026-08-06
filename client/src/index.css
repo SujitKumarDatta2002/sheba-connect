@@ -1,3 +1,202 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --sc-cream: #fee8c8;
+    --sc-sage: #769e7c;
+    --sc-mint: #9dc8b9;
+    --sc-peach: #eab29f;
+    --sc-forest: #293b2c;
+    --sc-panel: #3a4a3a;
+    --sc-paper: #fffdf9;
+    color: var(--sc-forest);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-synthesis: none;
+  }
+
+  html { background: var(--sc-forest); scroll-behavior: smooth; }
+  body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--sc-forest); color: var(--sc-cream); }
+  h1, h2 { letter-spacing: -0.025em; }
+  h1 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  button, [role="button"] { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  :where(a, button, [role="button"]):focus-visible {
+    outline: 3px solid var(--sc-peach);
+    outline-offset: 3px;
+  }
+  input, select, textarea {
+    background-color: #405644;
+    border-color: rgb(157 200 185 / 35%);
+    color: var(--sc-cream);
+  }
+  input::placeholder, textarea::placeholder { color: rgb(157 200 185 / 58%); }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--sc-sage) !important;
+    box-shadow: 0 0 0 3px rgb(118 158 124 / 18%) !important;
+    outline: none;
+  }
+  ::selection { background: var(--sc-peach); color: var(--sc-forest); }
+  * { scrollbar-color: var(--sc-sage) #223126; }
+}
+
+/*
+ * Dark application surface system.
+ * Attribute selectors intentionally cover existing utility-heavy pages without
+ * changing their component behavior or requiring route-specific wrappers.
+ */
+[class~="bg-white"] { background-color: var(--sc-panel) !important; }
+[class~="bg-gray-50"], [class~="bg-slate-50"] { background-color: #293b2c !important; }
+[class~="bg-gray-100"], [class~="bg-slate-100"] { background-color: #334536 !important; }
+[class~="bg-gray-200"], [class~="bg-slate-200"] { background-color: #405443 !important; }
+[class~="hover:bg-white"]:hover, [class~="hover:bg-gray-50"]:hover,
+[class~="hover:bg-gray-100"]:hover, [class~="hover:bg-slate-50"]:hover,
+[class~="hover:bg-slate-100"]:hover { background-color: #405443 !important; }
+
+[class~="from-gray-50"], [class~="from-slate-50"] { --tw-gradient-from: #293b2c var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(41 59 44 / 0) var(--tw-gradient-to-position) !important; }
+[class~="to-gray-50"], [class~="to-gray-100"], [class~="to-slate-50"] { --tw-gradient-to: #334536 var(--tw-gradient-to-position) !important; }
+
+[class~="text-gray-900"], [class~="text-slate-900"],
+[class~="text-gray-800"], [class~="text-slate-800"],
+[class~="text-gray-700"], [class~="text-slate-700"] { color: var(--sc-cream) !important; }
+[class~="text-gray-600"], [class~="text-slate-600"],
+[class~="text-gray-500"], [class~="text-slate-500"] { color: var(--sc-mint) !important; }
+[class~="text-gray-400"], [class~="text-slate-400"] { color: rgb(157 200 185 / 65%) !important; }
+
+[class~="border-gray-50"], [class~="border-gray-100"], [class~="border-gray-200"],
+[class~="border-gray-300"], [class~="border-slate-100"], [class~="border-slate-200"] {
+  border-color: rgb(157 200 185 / 25%) !important;
+}
+[class~="divide-gray-100"] > :not([hidden]) ~ :not([hidden]),
+[class~="divide-gray-200"] > :not([hidden]) ~ :not([hidden]) { border-color: rgb(157 200 185 / 18%) !important; }
+
+/* Pale semantic surfaces become dark tinted panels with readable labels. */
+[class~="bg-blue-50"], [class~="bg-blue-100"],
+[class~="bg-green-50"], [class~="bg-green-100"],
+[class~="bg-emerald-50"], [class~="bg-emerald-100"],
+[class~="bg-teal-50"], [class~="bg-teal-100"] { background-color: #344d39 !important; }
+[class~="bg-indigo-50"], [class~="bg-indigo-100"],
+[class~="bg-purple-50"], [class~="bg-purple-100"],
+[class~="bg-pink-50"], [class~="bg-pink-100"] { background-color: #563f38 !important; }
+[class~="bg-red-50"], [class~="bg-red-100"], [class~="bg-rose-50"], [class~="bg-rose-100"] { background-color: #573632 !important; }
+[class~="bg-yellow-50"], [class~="bg-yellow-100"],
+[class~="bg-amber-50"], [class~="bg-amber-100"],
+[class~="bg-orange-50"], [class~="bg-orange-100"] { background-color: #53472e !important; }
+
+[class~="text-blue-500"], [class~="text-blue-600"], [class~="text-blue-700"], [class~="text-blue-800"],
+[class~="text-green-500"], [class~="text-green-600"], [class~="text-green-700"], [class~="text-green-800"],
+[class~="text-emerald-500"], [class~="text-emerald-600"], [class~="text-emerald-700"], [class~="text-emerald-800"] { color: var(--sc-mint) !important; }
+[class~="text-indigo-600"], [class~="text-indigo-700"], [class~="text-indigo-800"],
+[class~="text-purple-600"], [class~="text-purple-700"], [class~="text-purple-800"] { color: var(--sc-peach) !important; }
+[class~="text-red-600"], [class~="text-red-700"], [class~="text-red-800"],
+[class~="text-rose-600"], [class~="text-rose-700"], [class~="text-rose-800"] { color: #ffb3a7 !important; }
+[class~="text-yellow-700"], [class~="text-yellow-800"],
+[class~="text-amber-700"], [class~="text-amber-800"],
+[class~="text-orange-700"], [class~="text-orange-800"] { color: #ffd184 !important; }
+
+/* Keep solid actions and notifications high contrast. */
+[class~="bg-blue-600"][class~="text-white"], [class~="bg-green-600"][class~="text-white"],
+[class~="bg-emerald-600"][class~="text-white"] { color: #fffdf9 !important; }
+[class~="bg-red-500"][class~="text-white"], [class~="bg-red-600"][class~="text-white"],
+[class~="bg-rose-500"][class~="text-white"], [class~="bg-rose-600"][class~="text-white"] { color: #fffdf9 !important; }
+
+/* Native controls and browser autofill must not flash light surfaces. */
+option { background: #293b2c; color: var(--sc-cream); }
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--sc-cream);
+  -webkit-box-shadow: 0 0 0 1000px #223126 inset;
+  transition: background-color 9999s ease-out;
+}
+
+/* Legacy CSS components that do not use utility classes. */
+.complaint-form, .upload-form, .complaints-table-container, .document-card,
+.service-card, .stat-card, .dashboard-container section {
+  background: var(--sc-panel) !important;
+  color: var(--sc-cream);
+  border-color: rgb(157 200 185 / 24%) !important;
+}
+.complaints-header h2, .documents-header h2, .service-card h3,
+.document-info h4, .stat-content h3, .dashboard-container section h2,
+.form-group label { color: var(--sc-cream) !important; }
+.service-card p, .document-size, .document-date, .stat-content p,
+.loading, .empty-state { color: var(--sc-mint) !important; }
+.complaints-table th { background: #223126 !important; color: var(--sc-cream) !important; }
+.complaints-table td { border-color: rgb(157 200 185 / 18%) !important; }
+.complaint-item, .document-item { background: #334536 !important; }
+.cancel-btn { background: #405443 !important; color: var(--sc-cream) !important; }
+.cancel-btn:hover:not(:disabled) { background: #4b6150 !important; }
+.new-complaint-btn, .upload-btn, .submit-btn, .save-btn, .download-btn {
+  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+}
+.delete-btn, [class~="bg-rose-500"], [class~="bg-red-500"] {
+  box-shadow: 0 5px 14px rgb(48 18 15 / 28%);
+}
+
+/* Premium elevation and control hierarchy shared by every routed page. */
+[class~="bg-white"][class*="rounded"], .sc-card, .sc-stat-card,
+.complaints-table-container, .document-card, .service-card, .stat-card {
+  border: 1px solid rgb(157 200 185 / 22%) !important;
+  box-shadow: 0 10px 28px rgb(14 25 17 / 22%) !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea {
+  background: #405644 !important;
+  border-color: rgb(157 200 185 / 34%) !important;
+  color: var(--sc-cream) !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):hover,
+select:hover, textarea:hover { border-color: rgb(157 200 185 / 58%) !important; }
+
+table thead, table thead tr { background: #1f3124 !important; }
+table thead th { color: var(--sc-cream) !important; border-color: rgb(157 200 185 / 25%) !important; }
+table tbody tr:nth-child(odd), .sc-table tbody tr:nth-child(odd) { background: rgb(41 59 44 / 48%) !important; }
+table tbody tr:nth-child(even), .sc-table tbody tr:nth-child(even) { background: rgb(58 74 58 / 74%) !important; }
+table tbody tr:hover, .sc-table tbody tr:hover { background: rgb(118 158 124 / 24%) !important; }
+table tbody td, .sc-table td { color: var(--sc-cream) !important; border-color: rgb(157 200 185 / 16%) !important; }
+
+form button[type="submit"] {
+  background: linear-gradient(135deg, var(--sc-peach), #d99883) !important;
+  color: var(--sc-forest) !important;
+  border-color: transparent !important;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgb(20 31 22 / 28%);
+}
+form button[type="submit"]:hover { filter: brightness(1.08); transform: translateY(-1px); }
+form button[type="submit"]:disabled { filter: saturate(.45); transform: none; }
+
+.sc-card, .sc-stat-card { background: var(--sc-panel) !important; color: var(--sc-cream) !important; }
+.sc-card-header { border-color: rgb(157 200 185 / 20%) !important; }
+.sc-input { background: #405644 !important; border-color: rgb(157 200 185 / 35%) !important; color: var(--sc-cream) !important; }
+.sc-btn-primary {
+  background: linear-gradient(135deg, var(--sc-sage), var(--sc-mint)) !important;
+  color: var(--sc-forest) !important;
+  box-shadow: 0 6px 18px rgb(13 25 16 / 28%) !important;
+}
+
+@layer components {
+  /* Shared polish for legacy pages and data-heavy admin screens. */
+  table { border-collapse: separate; border-spacing: 0; }
+  thead { background: var(--sc-forest); color: var(--sc-cream); }
+  th { letter-spacing: .045em; }
+  tbody tr { transition: background-color 160ms ease; }
+  tbody tr:hover { background-color: rgb(157 200 185 / 12%); }
+  dialog, [role="dialog"] > div, [role="dialog"] > form { border: 1px solid rgb(118 158 124 / 28%); }
+  .recharts-default-tooltip { border: 1px solid var(--sc-sage) !important; border-radius: 12px !important; }
+
+  /* Sage and mint surfaces need dark ink to retain accessible contrast. */
+  [class~="bg-blue-300"][class~="text-white"],
+  [class~="bg-blue-400"][class~="text-white"],
+  [class~="bg-blue-500"][class~="text-white"],
+  [class~="bg-green-300"][class~="text-white"],
+  [class~="bg-green-400"][class~="text-white"],
+  [class~="bg-green-500"][class~="text-white"],
+  [class~="bg-emerald-300"][class~="text-white"],
+  [class~="bg-emerald-400"][class~="text-white"],
+  [class~="bg-emerald-500"][class~="text-white"] { color: var(--sc-forest) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

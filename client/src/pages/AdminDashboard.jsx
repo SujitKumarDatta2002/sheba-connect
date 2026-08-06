@@ -3421,36 +3421,38 @@ export default function AdminDashboard() {
         .sc-sidebar.collapsed .sc-label { display: none; }
         .sc-sidebar.collapsed .sc-brand-text { display: none; }
         .sc-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 10px;
-          cursor: pointer; transition: all 0.15s; color: #94a3b8; font-size: 0.875rem; font-weight: 500; }
-        .sc-nav-item:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
-        .sc-nav-item.active { background: rgba(59,130,246,0.18); color: #93c5fd; }
-        .sc-nav-item.active .sc-nav-icon { color: #60a5fa; }
+          cursor: pointer; transition: all 0.15s; color: #9DC8B9; font-size: 0.875rem; font-weight: 500; }
+        .sc-nav-item:hover { background: rgba(157,200,185,0.10); color: #FEE8C8; }
+        .sc-nav-item.active { background: rgba(118,158,124,0.24); color: #FEE8C8; }
+        .sc-nav-item.active .sc-nav-icon { color: #EAB29F; }
         .sc-nav-icon { font-size: 1rem; flex-shrink: 0; }
-        .sc-stat-card { background: #fff; border-radius: 14px; padding: 22px 24px;
-          border: 1px solid #f1f5f9; transition: box-shadow 0.2s, transform 0.2s; }
-        .sc-stat-card:hover { box-shadow: 0 8px 24px rgba(15,23,42,0.08); transform: translateY(-2px); }
+        .sc-stat-card { background: #3A4A3A; color: #FEE8C8; border-radius: 14px; padding: 22px 24px;
+          border: 1px solid rgba(157,200,185,.22); transition: box-shadow 0.2s, transform 0.2s; }
+        .sc-stat-card:hover { box-shadow: 0 12px 28px rgba(13,25,16,0.30); transform: translateY(-2px); }
         .sc-table th { font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-          letter-spacing: 0.05em; color: #64748b; padding: 12px 16px; background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0; }
-        .sc-table td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #334155; }
-        .sc-table tr:hover td { background: #f8fafc; }
+          letter-spacing: 0.05em; color: #FEE8C8; padding: 12px 16px; background: #1F3124;
+          border-bottom: 1px solid rgba(157,200,185,.22); }
+        .sc-table td { padding: 14px 16px; border-bottom: 1px solid rgba(157,200,185,.14); font-size: 0.875rem; color: #FEE8C8; }
+        .sc-table tbody tr:nth-child(odd) td { background: rgba(41,59,44,.48); }
+        .sc-table tbody tr:nth-child(even) td { background: rgba(58,74,58,.74); }
+        .sc-table tr:hover td { background: rgba(118,158,124,.24); }
         .sc-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
           font-size: 0.72rem; font-weight: 600; }
         .sc-btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px;
-          background: #2563eb; color: #fff; border-radius: 10px; font-size: 0.875rem; font-weight: 600;
+          background: linear-gradient(135deg,#769E7C,#9DC8B9); color: #293B2C; border-radius: 10px; font-size: 0.875rem; font-weight: 700;
           border: none; cursor: pointer; transition: background 0.15s, box-shadow 0.15s; }
-        .sc-btn-primary:hover { background: #1d4ed8; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+        .sc-btn-primary:hover { filter: brightness(1.08); box-shadow: 0 6px 16px rgba(13,25,16,0.30); }
         .sc-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
         .sc-btn-ghost { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
-          background: transparent; color: #64748b; border-radius: 8px; font-size: 0.825rem; font-weight: 500;
-          border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.15s; }
-        .sc-btn-ghost:hover { background: #f1f5f9; color: #334155; }
-        .sc-input { width: 100%; padding: 9px 14px; border: 1px solid #e2e8f0; border-radius: 9px;
-          font-size: 0.875rem; color: #334155; outline: none; transition: border 0.15s; background: #fff; }
-        .sc-input:focus { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(147,197,253,0.25); }
-        .sc-card { background: #fff; border-radius: 16px; border: 1px solid #f1f5f9; overflow: hidden; }
-        .sc-card-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
-        .sc-section-title { font-size: 1rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+          background: transparent; color: #9DC8B9; border-radius: 8px; font-size: 0.825rem; font-weight: 500;
+          border: 1px solid rgba(157,200,185,.28); cursor: pointer; transition: all 0.15s; }
+        .sc-btn-ghost:hover { background: rgba(118,158,124,.16); color: #FEE8C8; }
+        .sc-input { width: 100%; padding: 9px 14px; border: 1px solid rgba(157,200,185,.34); border-radius: 9px;
+          font-size: 0.875rem; color: #FEE8C8; outline: none; transition: border 0.15s; background: #405644; }
+        .sc-input:focus { border-color: #9DC8B9; box-shadow: 0 0 0 3px rgba(157,200,185,0.20); }
+        .sc-card { background: #3A4A3A; border-radius: 16px; border: 1px solid rgba(157,200,185,.22); overflow: hidden; }
+        .sc-card-header { padding: 20px 24px; border-bottom: 1px solid rgba(157,200,185,.18); display: flex; align-items: center; justify-content: space-between; }
+        .sc-section-title { font-size: 1rem; font-weight: 700; color: #FEE8C8; display: flex; align-items: center; gap: 8px; }
         @keyframes scSlideDown { from { opacity:0; transform: translateY(-12px); } to { opacity:1; transform:translateY(0); } }
         .sc-notif { animation: scSlideDown 0.25s ease; }
       `}</style>

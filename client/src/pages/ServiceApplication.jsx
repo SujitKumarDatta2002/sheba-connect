@@ -849,7 +849,7 @@ const sendDocumentAlert = async (docType, status) => {
               disabled={submitting || readinessStatus !== 'ready'}
               className={`flex-1 px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
                 readinessStatus === 'ready'
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-gradient-to-r from-[#EAB29F] to-[#D99A85] text-[#293B2C] hover:brightness-110 shadow-lg font-bold'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >

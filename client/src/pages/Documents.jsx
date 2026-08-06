@@ -55,16 +55,16 @@ function ProfileBadge({ profileStatus, onDocClick }) {
   const offset = C * (1 - pct / 100);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-8">
+    <div className="bg-[#3A4A3A] rounded-2xl border border-[#9DC8B9]/25 shadow-xl p-6 mb-8">
 
       {/* Header row: title + current badge pill */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h2 className="text-base font-medium text-gray-800">Profile Readiness</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Upload documents to unlock higher badges</p>
+          <h2 className="text-lg font-bold text-[#FEE8C8]">Profile Readiness</h2>
+          <p className="text-sm text-[#9DC8B9]/75 mt-1">Upload documents to unlock higher badges</p>
         </div>
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-          style={{ background: badge.bg, color: badge.txt }}>
+          style={{ background: "#405644", color: "#FEE8C8", border: "1px solid rgba(157,200,185,.35)" }}>
           <span>{badge.icon}</span>{currentBadge.name}
         </span>
       </div>
@@ -76,20 +76,19 @@ function ProfileBadge({ profileStatus, onDocClick }) {
         <div className="relative flex-shrink-0">
           <svg width="88" height="88" viewBox="0 0 88 88">
             {/* Background track */}
-            <circle cx="44" cy="44" r={R} fill="none" stroke="#e5e7eb" strokeWidth="8" />
+            <circle cx="44" cy="44" r={R} fill="none" stroke="#4A604D" strokeWidth="8" />
             {/* Pulse ghost arc */}
-            <circle cx="44" cy="44" r={R} fill="none" stroke={badge.ring} strokeWidth="8"
+            <circle cx="44" cy="44" r={R} fill="none" stroke="#9DC8B9" strokeWidth="8"
               strokeLinecap="round" strokeDasharray={`12 ${C - 12}`}
               strokeDashoffset={offset} transform="rotate(-90 44 44)"
               opacity="0.3" style={{ transition: "stroke-dashoffset 1s ease" }} />
             {/* Main progress arc */}
-            <circle cx="44" cy="44" r={R} fill="none" stroke={badge.ring} strokeWidth="8"
+            <circle cx="44" cy="44" r={R} fill="none" stroke="#9DC8B9" strokeWidth="8"
               strokeLinecap="round" strokeDasharray={C}
               strokeDashoffset={offset} transform="rotate(-90 44 44)"
               style={{ transition: "stroke-dashoffset 1s ease" }} />
           </svg>
-          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-medium"
-            style={{ color: badge.ring }}>{pct}%</span>
+          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-bold text-[#FEE8C8]">{pct}%</span>
         </div>
 
         {/* Tier nodes + progress bar */}
@@ -102,14 +101,14 @@ function ProfileBadge({ profileStatus, onDocClick }) {
                 <div key={b.name} className="flex flex-col items-center gap-1">
                   <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all duration-300"
                     style={{
-                      background: achieved ? b.node : "#e5e7eb",
-                      color:      achieved ? b.nodeTxt : "#9ca3af",
-                      border:     active ? `2px solid ${b.ring}` : "2px solid transparent",
+                      background: active ? "#EAB29F" : achieved ? "#769E7C" : "#465A48",
+                      color:      achieved ? "#293B2C" : "#9DC8B9",
+                      border:     active ? "2px solid #FEE8C8" : "2px solid transparent",
                       transform:  active ? "scale(1.2)" : "scale(1)",
                     }}>
                     {b.icon}
                   </div>
-                  <span className="text-xs" style={{ color: active ? badge.ring : "#9ca3af", fontWeight: active ? 500 : 400 }}>
+                  <span className="text-xs" style={{ color: active ? "#EAB29F" : "#9DC8B9", opacity: active ? 1 : .65, fontWeight: active ? 700 : 500 }}>
                     {b.name}
                   </span>
                 </div>
@@ -120,11 +119,11 @@ function ProfileBadge({ profileStatus, onDocClick }) {
           {/* Linear progress bar */}
           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
             <div className="h-2 rounded-full transition-all duration-1000"
-              style={{ width: `${pct}%`, background: badge.bar }} />
+              style={{ width: `${pct}%`, background: "linear-gradient(90deg, #769E7C, #9DC8B9)" }} />
           </div>
           <div className="flex justify-between text-xs mt-1.5">
             <span className="text-gray-400">{uploaded} of {total} uploaded</span>
-            <span style={{ color: badge.ring }}>
+            <span className="text-[#EAB29F] font-medium">
               {nextBadge ? `Next: ${nextBadge.name} (${nextBadge.threshold}%)` : "Max level reached!"}
             </span>
           </div>
@@ -133,13 +132,13 @@ function ProfileBadge({ profileStatus, onDocClick }) {
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-2 mt-4">
-        <div className="bg-blue-50 rounded-xl p-3 text-center">
-          <div className="text-lg font-medium text-blue-600">{uploaded}</div>
-          <div className="text-xs text-blue-400 mt-0.5">Uploaded</div>
+        <div className="bg-[#EAB29F]/10 border border-[#EAB29F]/35 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-[#EAB29F]">{uploaded}</div>
+          <div className="text-xs text-[#EAB29F] mt-0.5">Uploaded</div>
         </div>
-        <div className="bg-rose-50 rounded-xl p-3 text-center">
-          <div className="text-lg font-medium text-rose-500">{total - uploaded}</div>
-          <div className="text-xs text-rose-300 mt-0.5">Missing</div>
+        <div className="bg-[#EAB29F]/10 border border-[#EAB29F]/35 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-[#EAB29F]">{total - uploaded}</div>
+          <div className="text-xs text-[#EAB29F] mt-0.5">Missing</div>
         </div>
         <div className="bg-emerald-50 rounded-xl p-3 text-center">
           <div className="text-lg font-medium text-emerald-600">{pct}%</div>
@@ -149,15 +148,15 @@ function ProfileBadge({ profileStatus, onDocClick }) {
 
       {/* Missing documents quick-upload shortcuts */}
       {missingDocuments.length > 0 && (
-        <div className="mt-4 p-3 rounded-xl border" style={{ background: "#FAEEDA", borderColor: "#EF9F27" }}>
-          <p className="text-xs font-medium mb-2" style={{ color: "#633806" }}>Still needed to reach next badge:</p>
-          <div className="flex flex-wrap gap-1.5">
+        <div className="mt-5 p-4 rounded-xl border border-[#EAB29F]/35 bg-[#EAB29F]/10">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-7 h-7 rounded-lg bg-[#EAB29F]/20 text-[#EAB29F] flex items-center justify-center font-bold">!</span>
+            <p className="text-sm font-semibold text-[#FEE8C8]">Still needed to reach next badge</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
             {missingDocuments.map(doc => (
               <button key={doc.type} onClick={() => onDocClick(doc.type)}
-                className="px-3 py-1 rounded-lg text-xs transition-colors"
-                style={{ background: "#FAC775", color: "#412402" }}
-                onMouseEnter={e => e.target.style.background = "#EF9F27"}
-                onMouseLeave={e => e.target.style.background = "#FAC775"}>
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-[#3A4A3A] text-[#EAB29F] border border-[#EAB29F]/35 hover:bg-[#EAB29F] hover:text-[#293B2C] hover:-translate-y-0.5">
                 + {doc.label}
               </button>
             ))}
@@ -625,7 +624,7 @@ export default function Documents() {
                               </>
                             ) : (
                               <button onClick={() => navigate(`/upload/${docType.type}`)}
-                                className="px-5 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center gap-2 text-sm">
+                                className="px-5 py-2 bg-gradient-to-r from-[#EAB29F] to-[#D99A85] text-[#293B2C] rounded-xl hover:brightness-110 flex items-center gap-2 text-sm font-bold shadow-md">
                                 <FaUpload className="w-4 h-4" /> Upload
                               </button>
                             )}

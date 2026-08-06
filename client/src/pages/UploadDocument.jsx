@@ -333,10 +333,10 @@ export default function UploadDocument() {
         )}
 
         {/* Main upload card */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <div className="bg-[#3A4A3A] rounded-2xl shadow-xl overflow-hidden border border-[#9DC8B9]/25">
 
           {/* Colored header */}
-          <div className={`bg-gradient-to-r ${currentDoc.gradient} px-8 py-6 relative overflow-hidden`}>
+          <div className="bg-gradient-to-r from-[#354D39] to-[#213126] px-8 py-6 relative overflow-hidden border-b border-[#769E7C]/30">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
             <div className="relative z-10 flex items-center gap-4">
@@ -357,11 +357,11 @@ export default function UploadDocument() {
           <div className="p-8">
 
             {/* Security info banner */}
-            <div className={`bg-gradient-to-r ${currentDoc.lightGradient} rounded-xl p-6 mb-8 border border-${currentDoc.color}-200 shadow-sm`}>
+            <div className="bg-[#405644] rounded-xl p-6 mb-8 border border-[#9DC8B9]/30 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 bg-gradient-to-r ${currentDoc.gradient} rounded-xl flex items-center justify-center shadow-md`}>
-                    <FaShieldAlt className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-[#769E7C] rounded-xl flex items-center justify-center shadow-md">
+                    <FaShieldAlt className="w-6 h-6 text-[#293B2C]" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">Secure Upload</h3>
@@ -384,8 +384,8 @@ export default function UploadDocument() {
 
             {/* Requirements checklist */}
             <div className="bg-amber-50 rounded-xl p-5 mb-8 flex items-start gap-4 border border-amber-200">
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <FaInfoCircle className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-[#EAB29F]/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <FaInfoCircle className="w-5 h-5 text-[#EAB29F]" />
               </div>
               <div>
                 <p className="font-semibold text-amber-800 mb-2">Document Requirements:</p>
@@ -432,7 +432,7 @@ export default function UploadDocument() {
                     {dragActive ? "Drop your file here" : "Drag & drop your PDF here"}
                   </p>
                   <p className="text-sm text-gray-500 mb-3">or</p>
-                  <button className={`inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r ${currentDoc.gradient} text-white rounded-xl hover:shadow-lg transition-all font-medium`}>
+                  <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#769E7C] to-[#9DC8B9] text-[#293B2C] rounded-xl hover:brightness-110 hover:shadow-lg transition-all font-bold">
                     <FaUpload className="w-4 h-4" /> Browse Files
                   </button>
                   <p className="text-xs text-gray-400 mt-4 flex items-center justify-center gap-1">
@@ -506,7 +506,7 @@ export default function UploadDocument() {
                 <>
                   {/* Upload / Update button */}
                   <button onClick={handleUpload} disabled={loading}
-                    className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-semibold">
+                    className="flex-1 px-6 py-4 bg-gradient-to-r from-[#EAB29F] to-[#D99A85] text-[#293B2C] rounded-xl hover:brightness-110 transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold">
                     {loading ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
