@@ -5,7 +5,7 @@ const appointmentSchema = new mongoose.Schema(
     complaintId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Complaint",
-      required: true
+      default: null
     },
     
     userId: {
@@ -17,7 +17,39 @@ const appointmentSchema = new mongoose.Schema(
     adminId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      default: null
+    },
+    
+    requestType: {
+      type: String,
+      enum: ["appointment", "consultation"],
+      default: "appointment"
+    },
+
+    serviceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Service",
+      default: null
+    },
+
+    serviceName: {
+      type: String,
+      default: ""
+    },
+
+    consultationReason: {
+      type: String,
+      default: ""
+    },
+
+    alternateEmail: {
+      type: String,
+      default: ""
+    },
+
+    meetingLink: {
+      type: String,
+      default: ""
     },
     
     // Appointment details
@@ -33,7 +65,7 @@ const appointmentSchema = new mongoose.Schema(
     
     location: {
       type: String,
-      required: true
+      default: "Online video consultation"
     },
     
     purpose: {
@@ -44,8 +76,8 @@ const appointmentSchema = new mongoose.Schema(
     // Status tracking
     status: {
       type: String,
-      enum: ["Scheduled", "Completed", "Cancelled", "Rescheduled"],
-      default: "Scheduled"
+      enum: ["Pending", "Scheduled", "Completed", "Cancelled", "Rescheduled"],
+      default: "Pending"
     },
     
     // User response

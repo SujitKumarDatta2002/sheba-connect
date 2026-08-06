@@ -3,10 +3,64 @@ const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const Appointment = require('../models/Appointment');
 const Complaint = require('../models/Complaint');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
+const { validateConsultationRequest, sendConsultationEmail } = require('../utils/consultationRequest');
 
 // ============================================
 // USER APPOINTMENT ROUTES
 // ============================================
+
+// Create a consultation request from the services page
+router.post('/appointments/consultation-request', authMiddleware, async (req, res) => {
+  try {
+    const validatedRequest = validateConsultationRequest(req.body);
+    const user = await User.findById(req.user.userId);
+    const admin = await User.findOne({ role: 'admin' });
+
+    const appointment = new Appointment({
+      requestType: 'consultation',
+      serviceId: req.body.serviceId || null,
+      serviceName: req.body.serviceName || 'Consultation request',
+      complaintId: req.body.complaintId || null,
+      userId: req.user.userId,
+      adminId: admin?._id || null,
+      appointmentDate: validatedRequest.preferredDateTime,
+      appointmentTime: validatedRequest.preferredTime,
+      location: req.body.location || 'Online video consultation',
+      purpose: req.body.reason || 'Video consultation request',
+      consultationReason: validatedRequest.reason,
+      alternateEmail: validatedRequest.alternateEmail || user?.email || '',
+      status: 'Pending'
+    });
+
+    await appointment.save();
+
+    await Notification.create({
+      userId: req.user.userId,
+      title: 'Consultation request received',
+      message: `Your consultation request for ${appointment.serviceName || 'the requested service'} has been received and is awaiting admin review.`,
+      category: 'APPOINTMENT'
+    });
+
+    const recipientEmail = validatedRequest.alternateEmail || user?.email || '';
+    if (recipientEmail) {
+      sendConsultationEmail({
+        to: recipientEmail,
+        subject: 'Consultation request received',
+        text: `Your consultation request has been received for ${validatedRequest.preferredDate} at ${validatedRequest.preferredTime}. An admin will review it shortly.`,
+        html: `<p>Your consultation request has been received for <strong>${validatedRequest.preferredDate}</strong> at <strong>${validatedRequest.preferredTime}</strong>.</p><p>An admin will review it shortly and contact you with the next step.</p>`
+      }).catch((emailError) => {
+        console.error('Consultation email send failed:', emailError);
+      });
+    }
+
+    res.status(201).json(appointment);
+  } catch (error) {
+    console.error('Error creating consultation request:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
 
 // Get user's own appointments
 router.get('/appointments', authMiddleware, async (req, res) => {
@@ -188,7 +242,7 @@ router.put('/admin/appointments/:id', authMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Admin access required' });
     }
     
-    const { appointmentDate, appointmentTime, location, purpose, status, notes, outcome } = req.body;
+    const { appointmentDate, appointmentTime, location, purpose, status, notes, outcome, meetingLink, alternateEmail } = req.body;
     const appointment = await Appointment.findById(req.params.id);
     
     if (!appointment) {
@@ -199,11 +253,46 @@ router.put('/admin/appointments/:id', authMiddleware, async (req, res) => {
     if (appointmentTime) appointment.appointmentTime = appointmentTime;
     if (location) appointment.location = location;
     if (purpose) appointment.purpose = purpose;
-    if (status) appointment.status = status;
+    if (status) {
+      if (status === 'Approved') {
+        appointment.status = 'Scheduled';
+      } else if (status === 'Rejected') {
+        appointment.status = 'Cancelled';
+      } else {
+        appointment.status = status;
+      }
+    }
     if (notes) appointment.notes = notes;
     if (outcome) appointment.outcome = outcome;
+    if (meetingLink !== undefined) appointment.meetingLink = meetingLink;
+    if (alternateEmail !== undefined) appointment.alternateEmail = alternateEmail;
     
     await appointment.save();
+
+    if (appointment.requestType === 'consultation') {
+      const appointmentUser = await User.findById(appointment.userId);
+      const recipientEmail = appointment.alternateEmail || appointmentUser?.email || '';
+      if (recipientEmail) {
+        const statusLabel = appointment.status === 'Scheduled' ? 'confirmed' : appointment.status === 'Cancelled' ? 'cancelled' : 'updated';
+        const subject = `Consultation ${statusLabel}`;
+        const text = `Your consultation request has been ${statusLabel}. ${appointment.meetingLink ? `Meeting link: ${appointment.meetingLink}` : ''}`;
+        sendConsultationEmail({
+          to: recipientEmail,
+          subject,
+          text,
+          html: `<p>Your consultation request has been <strong>${statusLabel}</strong>.</p>${appointment.meetingLink ? `<p>Meeting link: <a href="${appointment.meetingLink}">${appointment.meetingLink}</a></p>` : ''}`
+        }).catch((emailError) => {
+          console.error('Consultation email send failed:', emailError);
+        });
+      }
+
+      await Notification.create({
+        userId: appointment.userId,
+        title: `Consultation ${appointment.status === 'Scheduled' ? 'confirmed' : appointment.status === 'Cancelled' ? 'cancelled' : 'updated'}`,
+        message: `Your consultation request for ${appointment.serviceName || 'the requested service'} has been ${appointment.status === 'Scheduled' ? 'confirmed' : appointment.status === 'Cancelled' ? 'cancelled' : 'updated'}.`,
+        category: 'APPOINTMENT'
+      });
+    }
     
     res.json({ message: 'Appointment updated successfully', appointment });
   } catch (error) {

@@ -216,6 +216,7 @@ const aiRoutes = require("./routes/ai");
 const analyticsRoutes = require("./routes/analytics.routes");
 const { startDataSyncJob } = require("./jobs/dataSync.job");
 const { startExtendedDataSyncJobs } = require("./jobs/extendedDataSync.job");
+const appointmentRoutes = require("./routes/appointmentRoutes");
 
 // Import models
 require("./models/User");
@@ -344,6 +345,9 @@ app.use('/api/offices', officeRoutes);
 
 // Analytics routes
 app.use('/api/analytics', analyticsRoutes);
+
+// Appointment scheduling
+app.use("/api", appointmentRoutes);
 
 // Analytics external data sync scheduler
 startDataSyncJob();
