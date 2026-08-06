@@ -89,6 +89,17 @@ const serviceSchema = new mongoose.Schema(
       type: String, // Google Maps link
       default: ''
     },
+    // Optional, service-specific names used when finding offices on the map.
+    // Example: ['dpdc', 'desco', 'breb', 'palli bidyut'] for bill payments.
+    officeSearchKeywords: {
+      type: [String],
+      default: []
+    },
+    officeSearchCategory: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     isActive: {
       type: Boolean,
       default: true

@@ -10,7 +10,7 @@ const allowedTags = ['⚡ Quick Service', '👨‍💼 Helpful Staff', '😐 Ave
 // Feedback is voluntary: rating, tags, and comment are all optional.
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { serviceId, rating, tags = [], comment = '' } = req.body;
+    const { serviceId, rating, tags = [], comment = '', office } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(serviceId)) {
       return res.status(400).json({ message: 'A valid service ID is required.' });
@@ -28,6 +28,10 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Comment must be 2,000 characters or fewer.' });
     }
 
+    if (office && (!['node', 'way', 'relation', 'database'].includes(office.osmType) || !office.osmId || typeof office.osmId !== 'string')) {
+      return res.status(400).json({ message: 'Office feedback must include a valid office identifier.' });
+    }
+
     const serviceExists = await Service.exists({ _id: serviceId });
     if (!serviceExists) {
       return res.status(404).json({ message: 'Service not found.' });
@@ -38,7 +42,8 @@ router.post('/', authMiddleware, async (req, res) => {
       userId: req.user.userId,
       rating: rating ?? null,
       tags: [...new Set(tags)],
-      comment
+      comment,
+      office: office ? { osmType: office.osmType, osmId: office.osmId, name: office.name || '' } : undefined
     });
 
     return res.status(201).json({ message: 'Thank you for your feedback.', feedback });

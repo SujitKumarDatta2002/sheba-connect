@@ -14,6 +14,11 @@ const serviceFeedbackSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    office: {
+      osmType: { type: String, enum: ['node', 'way', 'relation', 'database'] },
+      osmId: { type: String, trim: true },
+      name: { type: String, trim: true }
+    },
     rating: {
       type: Number,
       min: 1,
@@ -40,5 +45,7 @@ const serviceFeedbackSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+serviceFeedbackSchema.index({ serviceId: 1, 'office.osmType': 1, 'office.osmId': 1 });
 
 module.exports = mongoose.model('ServiceFeedback', serviceFeedbackSchema);

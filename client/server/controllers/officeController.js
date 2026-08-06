@@ -133,6 +133,9 @@
 
 
 const Office = require('../models/Office');
+const Service = require('../models/Service');
+const ServiceFeedback = require('../models/ServiceFeedback');
+const { findNearbyOffices } = require('../services/osmOfficeService');
 
 // ── Haversine distance (km) ───────────────────────────────────────────────────
 function getDistanceKm(lat1, lon1, lat2, lon2) {
@@ -151,7 +154,7 @@ function toRad(deg) { return deg * (Math.PI / 180); }
 // Returns ALL offices for the service sorted nearest-first. No radius cap.
 exports.getNearbyOffices = async (req, res) => {
   try {
-    const { serviceId, userLat, userLng } = req.query;
+    const { serviceId, userLat, userLng, radius } = req.query;
 
     if (!serviceId || !userLat || !userLng) {
       return res.status(400).json({
@@ -164,6 +167,27 @@ exports.getNearbyOffices = async (req, res) => {
     if (isNaN(lat) || isNaN(lng)) {
       return res.status(400).json({ message: 'userLat / userLng must be valid numbers' });
     }
+
+    const service = await Service.findById(serviceId).select('name department');
+    if (!service) return res.status(404).json({ message: 'Service not found.' });
+    const osmOffices = await findNearbyOffices({ lat, lng, radius, service });
+    const groupedFeedback = await ServiceFeedback.aggregate([
+      { $match: { serviceId: service._id, 'office.osmId': { $exists: true } } },
+      { $group: { _id: { osmType: '$office.osmType', osmId: '$office.osmId' }, averageRating: { $avg: '$rating' }, reviewCount: { $sum: 1 }, tags: { $push: '$tags' } } }
+    ]);
+    const feedbackByOffice = new Map(groupedFeedback.map((entry) => {
+      const counts = entry.tags.flat().reduce((all, tag) => ({ ...all, [tag]: (all[tag] || 0) + 1 }), {});
+      return [`${entry._id.osmType}/${entry._id.osmId}`, { averageRating: entry.averageRating ? Math.round(entry.averageRating * 10) / 10 : null, reviewCount: entry.reviewCount, commonTags: Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([tag]) => tag) }];
+    }));
+    const enriched = osmOffices.map((office) => {
+      const community = feedbackByOffice.get(`${office.osmType}/${office.osmId}`) || { averageRating: null, reviewCount: 0, commonTags: [] };
+      const distanceScore = Math.max(0, 1 - office.distance / 25);
+      const ratingScore = community.averageRating === null ? 0.5 : ((community.averageRating * community.reviewCount) + 10.5) / ((community.reviewCount + 3) * 5);
+      return { ...office, community, recommendationScore: distanceScore * 0.45 + ratingScore * 0.4 + Math.min(community.reviewCount / 5, 1) * 0.15 };
+    });
+    const nearest = enriched.reduce((best, office) => !best || office.distance < best.distance ? office : best, null);
+    const best = enriched.reduce((winner, office) => !winner || office.recommendationScore > winner.recommendationScore ? office : winner, null);
+    return res.json({ source: 'openstreetmap', service: { id: service._id, name: service.name, department: service.department }, offices: enriched.map((office) => ({ ...office, isNearest: nearest && office.osmType === nearest.osmType && office.osmId === nearest.osmId, isBestNearby: best && office.osmType === best.osmType && office.osmId === best.osmId })) });
 
     // Match offices even if isActive field is missing (common when added via Compass)
     const offices = await Office.find({
@@ -187,7 +211,12 @@ exports.getNearbyOffices = async (req, res) => {
 
   } catch (err) {
     console.error('getNearbyOffices error:', err);
-    res.status(500).json({ message: 'Server error', detail: err.message });
+    res.json({
+      source: 'openstreetmap',
+      service: null,
+      offices: [],
+      warning: 'Nearby office data is temporarily unavailable. Please try again shortly.'
+    });
   }
 };
 

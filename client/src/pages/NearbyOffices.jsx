@@ -2,26 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosAuth from '../config/axiosInstance';
 import {
   FaMapMarkerAlt, FaPhone, FaLocationArrow, FaChevronLeft,
   FaChevronDown, FaChevronUp, FaExclamationTriangle, FaRedo,
-  FaRoute, FaBuilding, FaSortAmountDown, FaSearch
+  FaRoute, FaBuilding, FaSortAmountDown, FaSearch, FaStar, FaRegStar, FaTimes
 } from 'react-icons/fa';
 
 // ── Build a free Google Maps directions URL (no API key needed) ───────────────
 function buildDirectionsUrl(userLat, userLng, destLat, destLng, officeName) {
-  var base = 'https://www.google.com/maps/dir/?api=1';
-  var origin = '&origin=' + userLat + ',' + userLng;
-  var dest   = '&destination=' + destLat + ',' + destLng;
-  var mode   = '&travelmode=driving';
-  return base + origin + dest + mode;
+  return 'https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=' +
+    userLat + '%2C' + userLng + '%3B' + destLat + '%2C' + destLng;
 }
 
 // Fallback: open office pin on Google Maps (when user location not available)
 function buildMapPinUrl(lat, lng, name) {
-  return 'https://www.google.com/maps/search/?api=1&query=' +
-    encodeURIComponent(name) + '&query_place=' + lat + ',' + lng;
+  return 'https://www.openstreetmap.org/?mlat=' + lat + '&mlon=' + lng + '#map=17/' + lat + '/' + lng;
 }
 
 // ── Pulse dot ─────────────────────────────────────────────────────────────────
@@ -61,16 +57,68 @@ function DistanceBadge({ distance }) {
 }
 
 // ── Office Card ───────────────────────────────────────────────────────────────
+function OfficeFeedbackModal({ office, serviceId, onClose, onSubmitted }) {
+  var ratingState = useState(null);
+  var rating = ratingState[0];
+  var setRating = ratingState[1];
+  var tagsState = useState([]);
+  var tags = tagsState[0];
+  var setTags = tagsState[1];
+  var commentState = useState('');
+  var comment = commentState[0];
+  var setComment = commentState[1];
+  var errorState = useState('');
+  var error = errorState[0];
+  var setError = errorState[1];
+  var submittingState = useState(false);
+  var submitting = submittingState[0];
+  var setSubmitting = submittingState[1];
+  var options = ['⚡ Quick Service', '👨‍💼 Helpful Staff', '😐 Average Experience', '⏳ Long Waiting Time', '👎 Poor Service'];
+
+  function submit(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError('');
+    axiosAuth.post('/api/service-feedback', {
+      serviceId: serviceId,
+      rating: rating,
+      tags: tags,
+      comment: comment,
+      office: { osmType: office.osmType, osmId: office.osmId, name: office.name }
+    }).then(function() {
+      onSubmitted();
+      onClose();
+    }).catch(function(requestError) {
+      setError(requestError.response?.data?.message || 'Could not submit feedback. Please try again.');
+    }).finally(function() { setSubmitting(false); });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50" role="dialog" aria-modal="true">
+      <form onSubmit={submit} className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100"><div><p className="text-sm font-semibold text-blue-600">Office feedback</p><h2 className="font-bold text-gray-900">{office.name}</h2></div><button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700"><FaTimes /></button></div>
+        <div className="p-5 space-y-4">
+          <div><p className="text-sm font-medium text-gray-700 mb-1">Rating</p>{[1, 2, 3, 4, 5].map(function(star) { return <button key={star} type="button" onClick={function() { setRating(rating === star ? null : star); }} className="p-1 text-xl text-amber-400">{rating !== null && star <= rating ? <FaStar /> : <FaRegStar />}</button>; })}</div>
+          <div><p className="text-sm font-medium text-gray-700 mb-2">Quick feedback</p><div className="flex flex-wrap gap-2">{options.map(function(tag) { var selected = tags.indexOf(tag) !== -1; return <button key={tag} type="button" onClick={function() { setTags(selected ? tags.filter(function(value) { return value !== tag; }) : tags.concat(tag)); }} className={'px-3 py-1.5 text-xs rounded-full border ' + (selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 text-blue-700 border-blue-100')}>{tag}</button>; })}</div></div>
+          <textarea value={comment} onChange={function(event) { setComment(event.target.value); }} maxLength="2000" rows="3" placeholder="Tell us about your experience..." className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-3 px-5 py-4 bg-gray-50 border-t"><button type="button" onClick={onClose} className="text-sm text-gray-600">Cancel</button><button disabled={submitting} className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg disabled:opacity-60">{submitting ? 'Submitting...' : 'Submit feedback'}</button></div>
+      </form>
+    </div>
+  );
+}
+
 function OfficeCard({ office, index, userLocation }) {
   var directionsUrl = userLocation
     ? buildDirectionsUrl(userLocation.lat, userLocation.lng, office.latitude, office.longitude, office.name)
     : buildMapPinUrl(office.latitude, office.longitude, office.name);
 
-  var isNearest = index === 0;
+  var isNearest = office.isNearest;
 
   return (
-    <div className={'relative bg-white rounded-2xl overflow-hidden border transition-all duration-200 hover:shadow-lg ' +
-      (isNearest ? 'border-blue-200 shadow-md ring-1 ring-blue-100' : 'border-gray-100 shadow-sm hover:border-gray-200')}>
+    <article className={'relative bg-white rounded-2xl overflow-hidden border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ' +
+      (isNearest ? 'border-blue-200 shadow-md ring-1 ring-blue-100' : 'border-slate-200/80 shadow-sm hover:border-blue-200')}>
 
       {/* Nearest badge */}
       {isNearest && (
@@ -80,13 +128,16 @@ function OfficeCard({ office, index, userLocation }) {
           </div>
         </div>
       )}
+      {office.isBestNearby && (
+        <div className="absolute top-0 left-0"><div className="bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-br-xl rounded-tl-2xl">BEST NEARBY</div></div>
+      )}
 
       {/* Rank watermark */}
       <div className="absolute bottom-4 right-4 text-gray-100 font-black text-5xl select-none pointer-events-none leading-none">
         {String(index + 1).padStart(2, '0')}
       </div>
 
-      <div className="p-5">
+      <div className="p-5 pt-6">
         {/* Icon + name + address */}
         <div className="flex items-start gap-3 mb-3 pr-14">
           <div className={'flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ' +
@@ -100,7 +151,7 @@ function OfficeCard({ office, index, userLocation }) {
         </div>
 
         {/* Distance + phone row */}
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
           <DistanceBadge distance={office.distance} />
           {office.phone && (
             <span className="inline-flex items-center gap-1 text-xs text-gray-400">
@@ -110,6 +161,26 @@ function OfficeCard({ office, index, userLocation }) {
           )}
         </div>
 
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50/70 border border-amber-100 px-3 py-2.5 mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0"><FaStar className="text-xs" /></span>
+            <div>
+              <p className="text-[11px] leading-none uppercase tracking-wider font-bold text-amber-700">Community rating</p>
+              <p className="text-xs text-amber-800 mt-1">
+                {office.community?.averageRating !== null && office.community?.averageRating !== undefined
+                  ? office.community.reviewCount + (office.community.reviewCount === 1 ? ' review' : ' reviews')
+                  : 'No reviews yet'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-0.5 text-amber-500 flex-shrink-0" aria-label={office.community?.averageRating !== null ? office.community.averageRating + ' out of 5' : 'No rating yet'}>
+            {[1, 2, 3, 4, 5].map(function(star) {
+              return <FaStar key={star} className={'text-xs ' + (office.community?.averageRating !== null && star <= Math.round(office.community.averageRating) ? 'text-amber-400' : 'text-amber-200')} />;
+            })}
+            <span className="ml-1 text-sm font-bold text-amber-800">{office.community?.averageRating ?? '—'}</span>
+          </div>
+        </div>
+
         {/* Opening hours */}
         {office.openingHours && (
           <div className="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg mb-4">
@@ -117,6 +188,7 @@ function OfficeCard({ office, index, userLocation }) {
             <span>{office.openingHours}</span>
           </div>
         )}
+        {office.community?.commonTags?.length > 0 && <div className="flex flex-wrap gap-1 mb-4">{office.community.commonTags.map(function(tag) { return <span key={tag} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">{tag}</span>; })}</div>}
 
         {/* Action buttons */}
         <div className="flex gap-2">
@@ -153,7 +225,7 @@ function OfficeCard({ office, index, userLocation }) {
           </p>
         )}
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -284,14 +356,12 @@ export default function NearbyOffices() {
     setLoading(true);
     setError(null);
 
-    axios.get('http://localhost:5000/api/offices/nearby', {
+    axiosAuth.get('/api/offices/nearby', {
       params: { serviceId: serviceId, userLat: userLocation.lat, userLng: userLocation.lng }
     })
     .then(function(res) {
-      setOffices(res.data);
-      if (res.data.length > 0 && res.data[0].service) {
-        setServiceName(res.data[0].service.name);
-      }
+      setOffices(res.data.offices || []);
+      setServiceName(res.data.service?.name || '');
     })
     .catch(function(err) {
       console.error('Fetch offices error:', err);
@@ -328,12 +398,20 @@ export default function NearbyOffices() {
 
   var sorted = filtered.slice().sort(function(a, b) {
     if (sortBy === 'name') return a.name.localeCompare(b.name);
+    if (sortBy === 'best') return b.recommendationScore - a.recommendationScore;
     return a.distance - b.distance;
   });
 
   var closestKm = offices.length
     ? offices.reduce(function(m, o) { return o.distance < m ? o.distance : m; }, Infinity)
     : null;
+
+  var ratedOffices = offices.filter(function(office) {
+    return office.community?.averageRating !== null && office.community?.averageRating !== undefined;
+  });
+  var averageRating = ratedOffices.length
+    ? (ratedOffices.reduce(function(total, office) { return total + office.community.averageRating; }, 0) / ratedOffices.length).toFixed(1)
+    : '—';
 
   function fmtDist(km) {
     if (km === null) return '—';
@@ -343,11 +421,13 @@ export default function NearbyOffices() {
   var isIdle = !locLoading && !loading;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
 
       {/* ── Hero banner ── */}
-      <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-blue-800 text-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-800 to-blue-600 text-white">
+        <div className="absolute -top-28 -right-20 w-80 h-80 rounded-full bg-cyan-300/15 blur-3xl" />
+        <div className="absolute -bottom-24 left-1/4 w-64 h-64 rounded-full bg-blue-300/10 blur-3xl" />
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-9">
 
           {/* Back button */}
           <button
@@ -373,10 +453,10 @@ export default function NearbyOffices() {
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl font-bold mb-1">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
             {serviceName ? serviceName + ' Offices' : 'Nearby Government Offices'}
           </h1>
-          <p className="text-blue-200 text-sm">
+          <p className="text-blue-100/90 text-sm max-w-xl">
             {offices.length > 0
               ? offices.length + ' office' + (offices.length !== 1 ? 's' : '') + ' found near you' +
                 (closestKm !== null ? ' · closest ' + fmtDist(closestKm) + ' away' : '')
@@ -396,7 +476,7 @@ export default function NearbyOffices() {
 
         {/* ── Stats ── */}
         {offices.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
             <StatCard value={offices.length}    label="Total Found" color="blue" />
             <StatCard value={fmtDist(closestKm)} label="Closest"    color="emerald" />
             <StatCard
@@ -404,6 +484,7 @@ export default function NearbyOffices() {
               label="With Phone"
               color="amber"
             />
+            <StatCard value={averageRating} label="Community Rating" color="emerald" />
           </div>
         )}
 
@@ -475,7 +556,7 @@ export default function NearbyOffices() {
 
         {/* ── Search + sort bar ── */}
         {offices.length > 1 && (
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 mb-7 p-3 bg-white border border-slate-200 rounded-2xl shadow-sm">
             <div className="flex-1 relative">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs" />
               <input
@@ -488,14 +569,14 @@ export default function NearbyOffices() {
             </div>
             <div className="flex items-center gap-2">
               <FaSortAmountDown className="text-gray-400 text-sm flex-shrink-0" />
-              {['distance', 'name'].map(function(opt) {
+              {['distance', 'best', 'name'].map(function(opt) {
                 var cls = 'text-xs font-semibold px-4 py-2.5 rounded-xl border capitalize transition-all ' +
                   (sortBy === opt
                     ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                     : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50');
                 return (
                   <button key={opt} onClick={function() { setSortBy(opt); }} className={cls}>
-                    {opt}
+                    {opt === 'best' ? 'Recommended' : opt}
                   </button>
                 );
               })}
@@ -505,7 +586,7 @@ export default function NearbyOffices() {
 
         {/* ── Loading skeletons ── */}
         {(loading || locLoading) && !error && (
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
             {[1, 2, 3, 4].map(function(i) { return <SkeletonCard key={i} />; })}
           </div>
         )}
@@ -534,8 +615,8 @@ export default function NearbyOffices() {
               <FaBuilding className="text-blue-300 text-2xl" />
             </div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">No offices found</h3>
-            <p className="text-gray-400 text-sm">No offices are registered for this service yet.</p>
-            <p className="text-gray-300 text-xs mt-1">Add offices in MongoDB Compass with the correct serviceId.</p>
+            <p className="text-gray-400 text-sm">No matching offices were found in OpenStreetMap near this location.</p>
+            <p className="text-gray-300 text-xs mt-1">Try a different location or search again later as map data improves.</p>
           </div>
         )}
 
@@ -557,7 +638,7 @@ export default function NearbyOffices() {
             {sorted.map(function(office, i) {
               return (
                 <OfficeCard
-                  key={office._id}
+                  key={office.osmType + '-' + office.osmId}
                   office={office}
                   index={i}
                   userLocation={userLocation}
