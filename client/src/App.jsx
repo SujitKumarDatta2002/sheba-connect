@@ -133,6 +133,7 @@ import IftiAnalytics from "./pages/IftiAnalytics";{/* IFTI */}
 import UserNotifications from "./pages/UserNotifications";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ServiceApplication from "./pages/ServiceApplication";
+import ScrollReveal from "./components/ScrollReveal";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -148,6 +149,8 @@ function App() {
 
   return (
     <Router>
+
+      <ScrollReveal />
 
       {/* Navbar */}
       <Routes>

@@ -369,7 +369,7 @@ export default function NotificationBell() {
           {/* Header - now clickable to navigate to full notifications page */}
           <button
             onClick={goToNotifications}
-            className="w-full px-4 py-3 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-t-lg"
+            className="w-full px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-[#006666] hover:bg-[#009999] transition-colors rounded-t-lg"
           >
             <h3 className="text-sm font-semibold text-gray-800">Notifications</h3>
             {unreadCount > 0 && (

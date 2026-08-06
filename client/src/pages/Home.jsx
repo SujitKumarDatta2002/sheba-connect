@@ -1605,8 +1605,8 @@ const slides = [
     ctaPath: "/complaints",
     secondaryCta: "Browse Services",
     secondaryPath: "/services",
-    bg: `bg-gradient-to-br from-[#2a332b] via-[#3A4A3A] to-[#4A5A4A]`,
-    accent: `bg-gradient-to-r from-[#769e7c] to-[#9dc8b9]`,
+    bg: `bg-gradient-to-br from-[#14373D] via-[#21464B] to-[#3E5758]`,
+    accent: `bg-gradient-to-r from-[#EAB29F] to-[#CCE3DE]`,
   },
   {
     id: 2,
@@ -1619,8 +1619,8 @@ const slides = [
     ctaPath: "/services",
     secondaryCta: "Learn More",
     secondaryPath: "/",
-    bg: `bg-gradient-to-br from-[#2a332b] via-[#3A4A3A] to-[#4A5A4A]`,
-    accent: `bg-gradient-to-r from-[#769e7c] to-[#eab29f]`,
+    bg: `bg-gradient-to-br from-[#14373D] via-[#21464B] to-[#3E5758]`,
+    accent: `bg-gradient-to-r from-[#EAB29F] to-[#E5D4C0]`,
   },
   {
     id: 3,
@@ -1633,8 +1633,8 @@ const slides = [
     ctaPath: "/documents",
     secondaryCta: "Learn More",
     secondaryPath: "/",
-    bg: `bg-gradient-to-br from-[#2a332b] via-[#3A4A3A] to-[#4A5A4A]`,
-    accent: `bg-gradient-to-r from-[#9dc8b9] to-[#eab29f]`,
+    bg: `bg-gradient-to-br from-[#14373D] via-[#21464B] to-[#3E5758]`,
+    accent: `bg-gradient-to-r from-[#CCE3DE] to-[#EAB29F]`,
   },
 ];
 

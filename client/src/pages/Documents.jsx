@@ -137,6 +137,7 @@ function ProfileBadge({ profileStatus, onDocClick }) {
           <div className="text-xs text-[#EAB29F] mt-0.5">Uploaded</div>
         </div>
         <div className="bg-[#EAB29F]/10 border border-[#EAB29F]/35 rounded-xl p-3 text-center">
+        {/* <div className="bg-rose-600 border border-[#EAB29F]/35 rounded-xl p-3 text-center"> */}
           <div className="text-lg font-bold text-[#EAB29F]">{total - uploaded}</div>
           <div className="text-xs text-[#EAB29F] mt-0.5">Missing</div>
         </div>
@@ -378,7 +379,7 @@ export default function Documents() {
   const getStatusColor = status =>
     status === "uploaded"
       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-      : "bg-rose-50 text-rose-700 border-rose-200";
+      : "bg-rose-800 text-emerald-700 border-rose-200";
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -512,10 +513,10 @@ export default function Documents() {
                 <div className="flex-1 min-w-[200px]">
                   <label className="block text-sm font-medium text-gray-700 mb-3">Status</label>
                   <div className="flex gap-2">
-                    {[["all","blue"],["uploaded","emerald"],["missing","rose"]].map(([val, color]) => (
+                    {[["all","blue"],["uploaded","emerald"],["missing","bg-rose-600"]].map(([val, color]) => (
                       <button key={val} onClick={() => setStatusFilter(val)}
                         className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                          statusFilter === val ? `bg-${color}-600 text-white shadow-md` : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                          statusFilter === val ? `bg-${color}-600 text-[#FBF2C0] shadow-md` : "bg-[#3E5758] text-[#FBF2C0] hover:bg-[#2B5053]"}`}>
                         {val.charAt(0).toUpperCase() + val.slice(1)}
                       </button>
                     ))}
@@ -577,9 +578,9 @@ export default function Documents() {
                                 <FaCheckCircle className="mr-1.5 w-3 h-3" /> Uploaded
                                 {doc.status !== "Pending" && (
                                   <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
-                                    doc.status === "Verified" ? "bg-green-200 text-green-800" :
-                                    doc.status === "Rejected" ? "bg-red-200 text-red-800" :
-                                    "bg-yellow-200 text-yellow-800"}`}>
+                                    doc.status === "Verified" ? "bg-[#CCE3DE] text-[#14373D]" :
+                                    doc.status === "Rejected" ? "bg-[#EAB29F] text-[#14373D]" :
+                                    "bg-[#E5D4C0] text-[#14373D]"}`}>
                                     {doc.status}
                                   </span>
                                 )}

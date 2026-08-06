@@ -4568,10 +4568,10 @@ ${lang === "en" ? "Date" : "তারিখ"}: ${new Date().toLocaleDateString()
     const normalized = normalizeComplaintStatus(status);
     const base = "px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5";
     switch (normalized) {
-      case 'Resolved': return <span className={`${base} bg-green-100 text-green-800`}><FaCheckCircle size={10} />Resolved</span>;
-      case 'Pending': return <span className={`${base} bg-amber-100 text-amber-800`}><FaClock size={10} />Pending</span>;
-      case 'Processing': return <span className={`${base} bg-blue-100 text-blue-800`}><FaSpinner size={10} className="animate-spin" />Processing</span>;
-      default: return <span className={`${base} bg-gray-100 text-gray-700`}>{status}</span>;
+      case 'Resolved': return <span className={`${base} bg-[#CCE3DE] text-[#14373D]`}><FaCheckCircle size={10} />Resolved</span>;
+      case 'Pending': return <span className={`${base} bg-[#E5D4C0] text-[#14373D]`}><FaClock size={10} />Pending</span>;
+      case 'Processing': return <span className={`${base} bg-[#EAB29F] text-[#14373D]`}><FaSpinner size={10} className="animate-spin" />Processing</span>;
+      default: return <span className={`${base} bg-[#3E5758] text-[#FBF2C0]`}>{status}</span>;
     }
   };
 
@@ -4671,7 +4671,7 @@ ${lang === "en" ? "Date" : "তারিখ"}: ${new Date().toLocaleDateString()
     <div className="min-h-screen bg-gray-50">
 
       {/* ── PAGE HEADER ─────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-[#213126] to-[#354D39] text-[#FEE8C8] px-6 py-7 border-b border-[#769E7C]/30">
+      <div className="bg-gradient-to-br from-[#14373D] via-[#21464B] to-[#3E5758] text-[#FBF2C0] px-6 py-7 border-b border-[#CCE3DE]/30">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
@@ -4679,9 +4679,9 @@ ${lang === "en" ? "Date" : "তারিখ"}: ${new Date().toLocaleDateString()
                 <FaClipboardList className="text-2xl text-white" />
               </div>
               <div>
-                <p className="text-blue-300 text-xs font-semibold uppercase tracking-widest mb-1">Grievance Redressal System</p>
+                <p className="text-[#CCE3DE] text-xs font-semibold uppercase tracking-widest mb-1">Grievance Redressal System</p>
                 <h1 className="text-3xl font-black" style={{ fontFamily: "'Georgia', serif" }}>Complaint Services</h1>
-                <p className="text-blue-200 text-sm mt-1 flex items-center gap-2">
+                <p className="text-[#E5D4C0] text-sm mt-1 flex items-center gap-2">
                   <FaShieldAlt size={12} /> Government of Bangladesh · Digital Security Act, 2018
                 </p>
               </div>
@@ -4796,7 +4796,7 @@ ${lang === "en" ? "Date" : "তারিখ"}: ${new Date().toLocaleDateString()
               <button
                 onClick={generateReport}
                 disabled={generatingReport}
-                className="flex-shrink-0 bg-red-50 text-red-700 border border-red-200 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-100 transition flex items-center gap-2 disabled:opacity-50"
+                className="flex-shrink-0 bg-[#EAB29F] text-[#14373D] border border-[#E5D4C0] px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-[#E5D4C0] transition flex items-center gap-2 disabled:opacity-50"
               >
                 {generatingReport ? <FaSpinner className="animate-spin" size={13} /> : <FaFilePdf size={13} />} Report
               </button>
@@ -4820,8 +4820,8 @@ ${lang === "en" ? "Date" : "তারিখ"}: ${new Date().toLocaleDateString()
                   <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Citizen</th>
                   <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
                   <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Issue</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Priority</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-bold text-[#FBF2C0] uppercase tracking-wider">Priority</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-bold text-[#FBF2C0] uppercase tracking-wider">Status</th>
                   <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>

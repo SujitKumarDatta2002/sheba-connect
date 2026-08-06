@@ -388,8 +388,8 @@ export default function UploadDocument() {
                 <FaInfoCircle className="w-5 h-5 text-[#EAB29F]" />
               </div>
               <div>
-                <p className="font-semibold text-amber-800 mb-2">Document Requirements:</p>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-amber-700">
+                <p className="font-semibold text-[#FBF2C0] mb-2">Document Requirements:</p>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-[#FBF2C0]">
                   {["PDF format only", "Maximum file size: 10MB", "Clear and legible scan required", "All corners of document visible"].map(req => (
                     <li key={req} className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />{req}

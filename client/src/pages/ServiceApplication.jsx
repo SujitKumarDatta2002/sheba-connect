@@ -526,24 +526,24 @@ const sendDocumentAlert = async (docType, status) => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* Expected Timeline */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+              <div className="bg-gradient-to-br from-[#2B5053] to-[#3E5758] rounded-lg p-4 border border-[#CCE3DE]/40 text-[#FBF2C0]">
                 <div className="flex items-center gap-2 mb-2">
                   <FaCalendarCheck className="text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">Expected Timeline</span>
+                  <span className="text-sm font-medium text-[#CCE3DE]">Expected Timeline</span>
                 </div>
-                <div className="text-2xl font-bold text-blue-900">
+                <div className="text-2xl font-bold text-[#FBF2C0]">
                   {resolutionAnalytics.expectedResolution.mostLikely} days
                 </div>
-                <div className="text-xs text-blue-700 mt-1">
+                <div className="text-xs text-[#E5D4C0] mt-1">
                   {resolutionAnalytics.expectedResolution.minDays}-{resolutionAnalytics.expectedResolution.maxDays} days range
                 </div>
-                <div className="text-xs text-blue-600 mt-2">
+                <div className="text-xs text-[#CCE3DE] mt-2">
                   {resolutionAnalytics.expectedResolution.confidence}% confidence
                 </div>
               </div>
 
               {/* Department Average */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
+              <div className="bg-gradient-to-br from-[#21464B] to-[#3E5758] rounded-lg p-4 border border-[#E5D4C0]/35 text-[#FBF2C0]">
                 <div className="flex items-center gap-2 mb-2">
                   <FaHistory className="text-gray-600" />
                   <span className="text-sm font-medium text-gray-800">Department Average</span>
@@ -564,7 +564,7 @@ const sendDocumentAlert = async (docType, status) => {
               </div>
 
               {/* Trend */}
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+              <div className="bg-gradient-to-br from-[#2B5053] to-[#21464B] rounded-lg p-4 border border-[#CCE3DE]/40 text-[#FBF2C0]">
                 <div className="flex items-center gap-2 mb-2">
                   <FaChartLine className="text-green-600" />
                   <span className="text-sm font-medium text-green-800">Recent Trend</span>

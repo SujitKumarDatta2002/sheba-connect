@@ -1648,7 +1648,7 @@ export default function Services() {
                   </button>
                   <button
                     onClick={function() { setFilters(EMPTY_FILTERS); }}
-                    className="px-5 py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-100 flex items-center gap-2"
+                    className="px-5 py-3 bg-[#3E5758] text-[#FBF2C0] border border-[#CCE3DE]/40 rounded-xl hover:bg-[#21464B] flex items-center gap-2"
                   >
                     <FaTimes /><span>Clear</span>
                   </button>
