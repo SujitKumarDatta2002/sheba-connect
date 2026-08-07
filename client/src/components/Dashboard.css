@@ -2,6 +2,7 @@
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  color: #2a332b;
 }
 
 .loading {
@@ -19,8 +20,9 @@
 }
 
 .stat-card {
-  background: white;
-  border-radius: 12px;
+  background: #fffdf9;
+  border-radius: 16px;
+  border: 1px solid rgba(118, 158, 124, 0.22);
   padding: 2rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   display: flex;
@@ -60,18 +62,18 @@
   gap: 2rem;
 }
 
-section {
-  background: white;
+.dashboard-container section {
+  background: #3a4a3a;
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-section h2 {
+.dashboard-container section h2 {
   color: #333;
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #769e7c;
   padding-bottom: 0.5rem;
 }
 
@@ -88,9 +90,9 @@ section h2 {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: #f7fafc;
+  background: #fffbf5;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #769e7c;
 }
 
 .complaint-info,
@@ -107,7 +109,7 @@ section h2 {
 
 .complaint-status,
 .document-service {
-  color: #667eea;
+  color: #5f8567;
   font-size: 0.9rem;
   font-weight: 500;
   margin: 0;
@@ -186,7 +188,7 @@ section h2 {
     font-size: 2rem;
   }
   
-  section {
+  .dashboard-container section {
     padding: 1.5rem;
   }
   

@@ -124,13 +124,16 @@ import UploadDocument from "./pages/UploadDocument";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "./components/PrivateRoute";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminDashboardNew from "./pages/AdminDashboardNew";
-import NearbyOffices from "./pages/NearbyOffices"; 
+import AdminDashboard from "./pages/AdminDashboard"; {/* IFTI */}
+import Dashboard from "./pages/Dashboard";
+import NearbyOffices from "./pages/NearbyOffices"; // 👈 Import new page
 import ServiceManagement from "./pages/admin/ServiceManagement";
+import AdminApplicationReview from "./pages/admin/AdminApplicationReview";{/* IFTI */}
+import IftiAnalytics from "./pages/IftiAnalytics";{/* IFTI */}
 import UserNotifications from "./pages/UserNotifications";
-import Profile from "./pages/Profile";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ServiceApplication from "./pages/ServiceApplication";
+import ScrollReveal from "./components/ScrollReveal";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -146,6 +149,8 @@ function App() {
 
   return (
     <Router>
+
+      <ScrollReveal />
 
       {/* Navbar */}
       <Routes>
@@ -201,6 +206,18 @@ function App() {
           }
         />
 
+        {/* IFTI */}
+        
+        {/* User Dashboard Route */}
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+
         {/* Nearby Offices Route */}
         <Route
           path="/nearby"
@@ -221,6 +238,24 @@ function App() {
           }
         />
 
+        <Route
+          path="/analytics"
+          element={
+            <PrivateRoute>
+              <AnalyticsDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/apply-service/:serviceId"
+          element={
+            <PrivateRoute>
+              <ServiceApplication />
+            </PrivateRoute>
+          }
+        />
+
         {/* Admin Dashboard Route */}
         <Route
           path="/admin"
@@ -231,35 +266,53 @@ function App() {
           }
         />
 
-        {/* Service Management Route */}
-        <Route
-          path="/admin/services"
-          element={
-            <PrivateRoute>
-              <ServiceManagement />
-            </PrivateRoute>
-          }
-        />
+          {/* Admin Dashboard Route */}
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
 
-        {/* Profile Route */}
-        <Route
-          path="/profile"
-          element={
-            <PrivateRoute>
-              <Profile />
-            </PrivateRoute>
-          }
-        />
+          {/* Service Management Route */}
+          <Route
+            path="/admin/services"
+            element={
+              <PrivateRoute>
+                <ServiceManagement />
+              </PrivateRoute>
+            }
+          />
+          {/* IFTI */}
+          {/* Service Management Route */}
+          <Route
+            path="/admin/applications"
+            element={
+              <PrivateRoute>
+                <AdminApplicationReview />
+              </PrivateRoute>
+            }
+          />
+          {/* IFTI */}
+          <Route
+            path="/iftianlytics"
+            element={
+              <PrivateRoute>
+                <IftiAnalytics />
+              </PrivateRoute>
+            }
+          />
 
-        {/* Service Application Route */}
-        <Route
-          path="/apply-service/:serviceId"
-          element={
-            <PrivateRoute>
-              <ServiceApplication />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="/iftianalytics"
+            element={
+              <PrivateRoute>
+                <IftiAnalytics />
+              </PrivateRoute>
+            }
+          />
 
       </Routes>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosAuth from '../config/axiosInstance';
 import API from '../config/api';
@@ -48,17 +48,29 @@ export default function ServiceApplication() {
   const [checkingDocuments, setCheckingDocuments] = useState(false);
   const [resolutionAnalytics, setResolutionAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  const [smsPreferences, setSmsPreferences] = useState({
-    enabled: true,
-    phoneNumber: '',
-    reminders: true,
-    statusUpdates: true,
-    documentAlerts: true,
-    completionNotice: true
-  });
+  const [smsPhoneNumber, setSmsPhoneNumber] = useState('');
   const [smsNotificationStatus, setSmsNotificationStatus] = useState(null);
   const [sendingSms, setSendingSms] = useState(false);
   const [customSmsMessage, setCustomSmsMessage] = useState('');
+  const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
+
+  const [offices, setOffices] = useState([]);
+  const [officeLoading, setOfficeLoading] = useState(true);
+  const [officeError, setOfficeError] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locLoading, setLocLoading] = useState(true);
+  const [locationError, setLocationError] = useState(null);
+  const [manualLat, setManualLat] = useState('');
+  const [manualLng, setManualLng] = useState('');
+  const [showManualLocation, setShowManualLocation] = useState(false);
+
+  useEffect(() => {
+    if (!toast.show) return;
+    const timer = setTimeout(() => {
+      setToast({ show: false, type: 'success', message: '' });
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [toast.show]);
 
   // Fetch service details and user documents
   useEffect(() => {
@@ -88,6 +100,81 @@ export default function ServiceApplication() {
       fetchData();
     }
   }, [serviceId]);
+
+  const requestUserLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser.');
+      setLocLoading(false);
+      return;
+    }
+
+    setLocLoading(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setLocLoading(false);
+      },
+      (err) => {
+        console.warn('Location error:', err);
+        setLocationError(
+          err.code === 1
+            ? 'Location permission denied. Please allow location access or enter coordinates manually.'
+            : 'Unable to determine your location. Please enter coordinates manually.'
+        );
+        setLocLoading(false);
+      },
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  const fetchNearbyOffices = async (lat, lng) => {
+    setOfficeLoading(true);
+    setOfficeError(null);
+
+    try {
+      const res = await axiosAuth.get('/api/offices/nearby', {
+        params: {
+          serviceId,
+          userLat: lat,
+          userLng: lng
+        }
+      });
+      setOffices(res.data.offices || []);
+    } catch (error) {
+      console.error('Failed to load nearby offices:', error);
+      setOfficeError('Could not load nearby offices. Please try again later.');
+      setOffices([]);
+    } finally {
+      setOfficeLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!serviceId) return;
+    requestUserLocation();
+  }, [serviceId]);
+
+  useEffect(() => {
+    if (!serviceId || !userLocation) return;
+    fetchNearbyOffices(userLocation.lat, userLocation.lng);
+  }, [serviceId, userLocation]);
+
+  const handleManualLocationSubmit = (event) => {
+    event.preventDefault();
+    const parsedLat = parseFloat(manualLat);
+    const parsedLng = parseFloat(manualLng);
+
+    if (isNaN(parsedLat) || isNaN(parsedLng) || parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
+      setLocationError('Please enter valid coordinates. Latitude must be -90 to 90 and longitude must be -180 to 180.');
+      return;
+    }
+
+    setLocationError(null);
+    setUserLocation({ lat: parsedLat, lng: parsedLng });
+    setShowManualLocation(false);
+  };
 
   const analyzeDocumentReadiness = (requiredDocs, userDocs) => {
     const status = {};
@@ -245,61 +332,42 @@ export default function ServiceApplication() {
   };
 
 const sendApplicationReminder = async () => {
-  if (!smsPreferences.enabled || !smsPreferences.phoneNumber) {
+  if (!smsPhoneNumber) {
     return;
   }
 
-  // Use custom message if typed, otherwise fall back to the default reminder test message
-  const defaultMsg = `Sheba Connect: Reminder - Your application for ${service?.name} is ready to submit. Expected completion: ${resolutionAnalytics?.expectedResolution?.mostLikely || 12} days. Reply STOP to unsubscribe.`;
-  const message = customSmsMessage.trim() !== '' ? customSmsMessage : defaultMsg;
-  
-  await sendSmsNotification(smsPreferences.phoneNumber, message, 'reminder');
-  
-  // Clear the custom message box after sending successfully
-  if (customSmsMessage.trim() !== '') {
-    setCustomSmsMessage('');
-  }
-};
+    const defaultMsg = `Sheba Connect: Reminder - Your application for ${service?.name} is ready to submit. Expected completion: ${resolutionAnalytics?.expectedResolution?.mostLikely || 12} days. Reply STOP to unsubscribe.`;
+    const message = customSmsMessage.trim() !== '' ? customSmsMessage : defaultMsg;
+    
+    await sendSmsNotification(smsPhoneNumber, message, 'reminder');
+    
+    if (customSmsMessage.trim() !== '') {
+      setCustomSmsMessage('');
+    }
+  };
 
-const sendStatusUpdate = async (status) => {
-  if (!smsPreferences.enabled || !smsPreferences.phoneNumber || !smsPreferences.statusUpdates) {
-    return;
-  }
-
-  const statusMessages = {
-    submitted: `Sheba Connect: Your application for ${service?.name} has been submitted successfully. Reference: APP${Date.now().toString().slice(-6)}`,
-    processing: `Sheba Connect: Your application is now being processed. Expected completion: ${resolutionAnalytics?.expectedResolution?.mostLikely || 12} days`,
-    approved: `Sheba Connect: Great news! Your application for ${service?.name} has been approved.`,
+  const sendStatusUpdate = async (status) => {
+    if (!smsPhoneNumber) {
+      return;
+    }
     rejected: `Sheba Connect: Your application requires attention. Please check your account for details.`,
     completed: `Sheba Connect: Your application for ${service?.name} has been completed successfully!`
   };
 
   const message = statusMessages[status] || `Sheba Connect: Update on your application for ${service?.name}: ${status}`;
   
-  await sendSmsNotification(smsPreferences.phoneNumber, message, 'status_update');
+  await sendSmsNotification(smsPhoneNumber, message, 'status_update');
 };
 
 const sendDocumentAlert = async (docType, status) => {
-  if (!smsPreferences.enabled || !smsPreferences.phoneNumber || !smsPreferences.documentAlerts) {
+  if (!smsPhoneNumber) {
     return;
   }
 
   const message = `Sheba Connect: Document ${DOCUMENT_LABELS[docType]} is now ${status}. Application progress updated.`;
   
-  await sendSmsNotification(smsPreferences.phoneNumber, message, 'document_alert');
+  await sendSmsNotification(smsPhoneNumber, message, 'document_alert');
 };
-
-  const updateSmsPreferences = async (preferences) => {
-    setSmsPreferences(preferences);
-    // Send a real confirmation SMS so the user knows it works
-    if (preferences.phoneNumber) {
-      await sendSmsNotification(
-        preferences.phoneNumber,
-        `Sheba Connect: ✅ SMS notifications activated for your application. You will receive updates on this number.`,
-        'confirmation'
-      );
-    }
-  };
 
 // Check for return from upload page
   useEffect(() => {
@@ -331,21 +399,26 @@ const sendDocumentAlert = async (docType, status) => {
         department:         service.department,
         requiredDocuments:  service.requiredDocuments, // array of doc type keys
         submittedDocuments: uploadedDocuments,     // controller expects submittedDocuments
+        notificationPhone:  smsPhoneNumber,
         additionalInfo:     document.querySelector('textarea')?.value || '',
       };
 
       const response = await axiosAuth.post('/api/service-applications', applicationData);
       
       // Send SMS notification for successful submission
-      if (smsPreferences.enabled && smsPreferences.phoneNumber && smsPreferences.statusUpdates) {
+      if (smsPhoneNumber) {
         await sendStatusUpdate('submitted');
       }
       
-      // Show success message
-      alert('Application submitted successfully! You will receive updates on your application status.');
-      
-      // Navigate back to services
-      navigate('/services');
+      // Redirect back with a toast notification on service page
+      navigate('/services', {
+        state: {
+          toast: {
+            type: 'success',
+            message: 'Application submitted successfully'
+          }
+        }
+      });
     } catch (error) {
       console.error('Error submitting application:', error);
       const backendMessage = error.response?.data?.message;
@@ -355,8 +428,7 @@ const sendDocumentAlert = async (docType, status) => {
       if (missingDocs && missingDocs.length > 0) {
         alertMsg += '\n\nMissing/Unverified:\n- ' + missingDocs.join('\n- ');
       }
-      
-      alert(alertMsg);
+      setToast({ show: true, type: 'error', message: alertMsg });
     } finally {
       setSubmitting(false);
     }
@@ -388,13 +460,24 @@ const sendDocumentAlert = async (docType, status) => {
     }
   };
 
+  const formatDistanceLabel = (distance) => {
+    if (distance === null || distance === undefined) return '—';
+    return distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`;
+  };
+
+  const buildDirectionsUrl = (office) => {
+    if (!userLocation) return `https://www.openstreetmap.org/?mlat=${office.latitude}&mlon=${office.longitude}#map=17/${office.latitude}/${office.longitude}`;
+    return 'https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=' +
+      `${userLocation.lat}%2C${userLocation.lng}%3B${office.latitude}%2C${office.longitude}`;
+  };
+
   const getReadinessAlert = () => {
     switch (readinessStatus) {
       case 'ready':
         return {
           type: 'success',
           title: 'Ready to Apply!',
-          message: 'All required documents are verified. You can proceed with your application.',
+          message: 'All required documents are uploaded in your profile. You can proceed with your application.',
           icon: <FaCheckCircle className="text-green-500" />,
           bgColor: 'bg-green-50',
           borderColor: 'border-green-200',
@@ -403,8 +486,8 @@ const sendDocumentAlert = async (docType, status) => {
       case 'partial':
         return {
           type: 'warning',
-          title: 'Documents Pending Verification',
-          message: `You have uploaded ${uploadedDocuments.length} of ${service?.requiredDocuments.length} required documents. Some documents are still pending verification.`,
+          title: 'Partially Ready',
+          message: `You have uploaded ${uploadedDocuments.length} of ${service?.requiredDocuments.length} required documents.`,
           icon: <FaExclamationTriangle className="text-yellow-500" />,
           bgColor: 'bg-yellow-50',
           borderColor: 'border-yellow-200',
@@ -453,6 +536,13 @@ const sendDocumentAlert = async (docType, status) => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {toast.show && (
+        <div className={`fixed top-4 right-4 z-50 max-w-md px-4 py-2 rounded-lg text-white shadow-lg ${
+          toast.type === 'error' ? 'bg-red-500' : 'bg-green-600'
+        }`}>
+          {toast.message}
+        </div>
+      )}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
         
         {/* Header */}
@@ -525,24 +615,24 @@ const sendDocumentAlert = async (docType, status) => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* Expected Timeline */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+              <div className="bg-gradient-to-br from-[#2B5053] to-[#3E5758] rounded-lg p-4 border border-[#CCE3DE]/40 text-[#FBF2C0]">
                 <div className="flex items-center gap-2 mb-2">
                   <FaCalendarCheck className="text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">Expected Timeline</span>
+                  <span className="text-sm font-medium text-[#CCE3DE]">Expected Timeline</span>
                 </div>
-                <div className="text-2xl font-bold text-blue-900">
+                <div className="text-2xl font-bold text-[#FBF2C0]">
                   {resolutionAnalytics.expectedResolution.mostLikely} days
                 </div>
-                <div className="text-xs text-blue-700 mt-1">
+                <div className="text-xs text-[#E5D4C0] mt-1">
                   {resolutionAnalytics.expectedResolution.minDays}-{resolutionAnalytics.expectedResolution.maxDays} days range
                 </div>
-                <div className="text-xs text-blue-600 mt-2">
+                <div className="text-xs text-[#CCE3DE] mt-2">
                   {resolutionAnalytics.expectedResolution.confidence}% confidence
                 </div>
               </div>
 
               {/* Department Average */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
+              <div className="bg-gradient-to-br from-[#21464B] to-[#3E5758] rounded-lg p-4 border border-[#E5D4C0]/35 text-[#FBF2C0]">
                 <div className="flex items-center gap-2 mb-2">
                   <FaHistory className="text-gray-600" />
                   <span className="text-sm font-medium text-gray-800">Department Average</span>
@@ -563,7 +653,7 @@ const sendDocumentAlert = async (docType, status) => {
               </div>
 
               {/* Trend */}
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+              <div className="bg-gradient-to-br from-[#2B5053] to-[#21464B] rounded-lg p-4 border border-[#CCE3DE]/40 text-[#FBF2C0]">
                 <div className="flex items-center gap-2 mb-2">
                   <FaChartLine className="text-green-600" />
                   <span className="text-sm font-medium text-green-800">Recent Trend</span>
@@ -730,6 +820,144 @@ const sendDocumentAlert = async (docType, status) => {
           </div>
         )}
 
+        {/* Nearby Office Lookup */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FaMapMarkerAlt className="text-red-500" />
+            <h3 className="text-lg font-semibold text-gray-800">Nearby Offices for {service.name}</h3>
+            <span className="text-sm text-gray-500 ml-auto">
+              Find the closest service office for this application
+            </span>
+          </div>
+
+          <div className="space-y-4 mb-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <p className="text-sm text-gray-500">Your current location</p>
+                <p className="text-base font-semibold text-gray-800">
+                  {userLocation ? `${userLocation.lat.toFixed(5)}, ${userLocation.lng.toFixed(5)}` : 'Unknown'}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {locLoading ? 'Detecting your location…' : locationError || 'Using your device location to find nearby offices.'}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <p className="text-sm text-gray-500">Nearest office</p>
+                <p className="text-base font-semibold text-gray-800">
+                  {officeLoading ? 'Loading offices…' : offices.length ? offices[0].name : 'No nearby offices found'}
+                </p>
+                {offices.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-2">{formatDistanceLabel(offices[0].distance)} away</p>
+                )}
+              </div>
+            </div>
+
+            {!userLocation && !locLoading && (
+              <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                <p>Please allow location access or enter coordinates manually to see nearby offices.</p>
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={requestUserLocation}
+                className="w-full px-4 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
+                type="button"
+              >
+                {locLoading ? 'Detecting Location…' : 'Refresh Location'}
+              </button>
+              <button
+                onClick={() => setShowManualLocation(!showManualLocation)}
+                type="button"
+                className="w-full px-4 py-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition"
+              >
+                {showManualLocation ? 'Hide Manual Entry' : 'Enter Coordinates Manually'}
+              </button>
+            </div>
+
+            {showManualLocation && (
+              <form onSubmit={handleManualLocationSubmit} className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+                  <input
+                    type="text"
+                    value={manualLat}
+                    onChange={(e) => setManualLat(e.target.value)}
+                    placeholder="23.7806"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+                  <input
+                    type="text"
+                    value={manualLng}
+                    onChange={(e) => setManualLng(e.target.value)}
+                    placeholder="90.2794"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition"
+                  >
+                    Use These Coordinates
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-slate-50 p-4">
+            {officeError && (
+              <p className="text-sm text-red-600">{officeError}</p>
+            )}
+            {officeLoading && !officeError && (
+              <p className="text-sm text-gray-500">Loading nearby offices…</p>
+            )}
+            {!officeLoading && !officeError && offices.length === 0 && (
+              <p className="text-sm text-gray-500">No nearby offices were found for this service. Try a different location or refresh.</p>
+            )}
+            {!officeLoading && offices.length > 0 && (
+              <div className="space-y-4">
+                {offices.slice(0, 4).map((office, index) => (
+                  <div key={office.osmType + '/' + office.osmId} className="rounded-2xl border border-gray-200 bg-white p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm text-gray-500">{index === 0 ? 'Best nearby office' : `Option ${index + 1}`}</div>
+                        <h4 className="text-lg font-semibold text-gray-900">{office.name}</h4>
+                        <p className="text-sm text-gray-500 mt-1">{office.address}</p>
+                      </div>
+                      <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
+                        {formatDistanceLabel(office.distance)}
+                      </span>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <a
+                        href={buildDirectionsUrl(office)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                      >
+                        View directions
+                      </a>
+                      {office.phone && (
+                        <a
+                          href={`tel:${office.phone}`}
+                          className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                        >
+                          Call office
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* SMS Notifications */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
@@ -747,101 +975,21 @@ const sendDocumentAlert = async (docType, status) => {
                 <FaPhoneAlt className="inline mr-2" />
                 Phone Number for SMS Alerts
               </label>
-              <div className="flex gap-3">
-                <input
-                  type="tel"
-                  placeholder="+8801XXXXXXXXX"
-                  value={smsPreferences.phoneNumber}
-                  onChange={(e) => setSmsPreferences(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <button
-                  onClick={() => updateSmsPreferences(smsPreferences)}
-                  disabled={!smsPreferences.phoneNumber || sendingSms}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {sendingSms ? (
-                    <>
-                      <FaSpinner className="animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck />
-                      Save
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Notification Preferences */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                <FaBell className="inline mr-2" />
-                Notification Types
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={smsPreferences.reminders}
-                    onChange={(e) => setSmsPreferences(prev => ({ ...prev, reminders: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-800">Application Reminders</span>
-                    <p className="text-xs text-gray-600">Get reminded to complete your application</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={smsPreferences.statusUpdates}
-                    onChange={(e) => setSmsPreferences(prev => ({ ...prev, statusUpdates: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-800">Status Updates</span>
-                    <p className="text-xs text-gray-600">Receive updates when your application status changes</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={smsPreferences.documentAlerts}
-                    onChange={(e) => setSmsPreferences(prev => ({ ...prev, documentAlerts: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-800">Document Alerts</span>
-                    <p className="text-xs text-gray-600">Get notified when documents are verified</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    checked={smsPreferences.completionNotice}
-                    onChange={(e) => setSmsPreferences(prev => ({ ...prev, completionNotice: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-800">Completion Notice</span>
-                    <p className="text-xs text-gray-600">Final notification when your service is completed</p>
-                  </div>
-                </label>
-              </div>
+              <input
+                type="tel"
+                placeholder="+8801XXXXXXXXX"
+                value={smsPhoneNumber}
+                onChange={(e) => setSmsPhoneNumber(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
             {/* Test SMS */}
-            {smsPreferences.phoneNumber && (
+            {smsPhoneNumber && (
               <div className="border-t border-gray-200 pt-4">
                 <div className="mb-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Send a Custom Action / Test Message to {smsPreferences.phoneNumber}
+                    Send a demo message to {smsPhoneNumber}
                   </label>
                   <textarea
                     className="w-full p-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-2"
@@ -928,7 +1076,7 @@ const sendDocumentAlert = async (docType, status) => {
               disabled={submitting || readinessStatus !== 'ready'}
               className={`flex-1 px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
                 readinessStatus === 'ready'
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-gradient-to-r from-[#EAB29F] to-[#D99A85] text-[#293B2C] hover:brightness-110 shadow-lg font-bold'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
